@@ -1,5 +1,5 @@
 {
-  "name": "hookdeck-demo-v2",
+  "name": "hookdeck-demo",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -22,5 +22,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.2.0",
     "@eslint/eslintrc": "^3"
+  },
+  "engines": {
+    "node": ">=22.9.0"
   }
 }
