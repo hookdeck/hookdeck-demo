@@ -9,10 +9,10 @@ export async function POST(request: NextRequest) {
   }
 
   // Access the verified request body using `body`
-  // For example: console.log("Verified Shopify payload:", body);
+  // For example: console.log("Verified Stripe payload:", body);
 
   return NextResponse.json({
     message:
-      "Hello from the Hookdeck demo. In the PagerDuty Demo! Request verified.",
+      "Hello from the Hookdeck demo. In the Stripe Demo! Request verified.",
   });
 }
