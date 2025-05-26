@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
   // For example: console.log("Verified Stripe payload:", body);
 
   return NextResponse.json({
-    message:
-      "Hello from the Hookdeck demo. In the Stripe Demo! Request verified.",
+    message: "Hello from the Hookdeck demo. Stripe endpoint. Request verified.",
   });
 }

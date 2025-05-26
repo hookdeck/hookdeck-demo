@@ -13,6 +13,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     message:
-      "Hello from the Hookdeck demo. In the PagerDuty Demo! Request verified.",
+      "Hello from the Hookdeck demo. Shopify endpoint. Request verified.",
   });
 }
