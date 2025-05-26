@@ -25,17 +25,17 @@ SHOPIFY_CUSTOMER_PHONE_NUMBER={PHONE_NUMBER}
 2. Creation connection demo
    1. Choose Source Type / highlight authentication
    2. Select Destination Type of mock for testing purposes
-   3. Make cURL command and see event arrive
+   3. Make cURL command and see event arrive `npm run shopify:trigger`
    4. Demo localhost development
       1. Run local server
       2. Use Hookdeck CLI to listen and forward events
       3. Show updated dashboard with CLI connection
       4. Deliver event to localhost via cURL
       5. Show/demo replay event
-   5. Change Mock Destination to live destination and deploy
+   5. Create a new Destination of type HTTP and deploy
       1. Deploy from local and get URL
-      2. Update Destination URL
-      3. Deliver event via URL
+      2. Update Destination URL to https://hookdeck-demo.vercel.app/api/shopify
+      3. Deliver event to PROD
 3. Connect service demo
    1. Create a new connection and reused the existing Source
    2. Create a new destination with URL and required auth
@@ -72,10 +72,15 @@ SHOPIFY_CUSTOMER_PHONE_NUMBER={PHONE_NUMBER}
 
 1. What is Hookdeck, and what are the common use cases? Mention a couple of customers, including Lemon Squeezy.
 2. More detail on the most common Stripe-related use case: receive events, emphasizing that this centralizes event management from all API providers you are receiving webhooks from. Show the Visual designer.
-3. Hands-on receiving webhooks locally with the Hookdeck CLI. Will show Stripe and also Shopify to emphasize the centralizing of webhook handling.
-4. Push the app live to some hosting provider and update Hookdeck to deliver the events to the live endpoint.
-5. Cover features such as Transformations and Filters. Go into a Filter use case. I'm still working on that, but something based on data residency based on the customer's address and sending the event to a different endpoint. Open to other ideas.
-6. Push a bug to the live endpoint (whoops!) and demo the issue notification and webhook retry workflow.
+3. Set up connections to both Stripe and trigger and event and then Shopify and trigger an event.
+4. Show using filters to route events to different destinations.
+   a. Based on event type - prioritizing specific event types.
+   b. Based on payload content
+5. Hands-on receiving webhooks locally with the Hookdeck CLI. Will show Stripe and also Shopify to emphasize the centralizing of webhook verification and handling.
+   a. Also, show errors and the ability to replay events.
+6. Transformations to augment the payload. Maybe set a value based on some custom logic or convert into a normalized payload across different providers (e.g., Twilio SMS and Vonage SMS).
+7. Push the app live to some hosting provider and update Hookdeck to deliver the events to the live endpoint.
+8. Push a bug to the live endpoint (whoops!) and demo the issue notification and webhook retry workflow.
 
 ## Notes
 
