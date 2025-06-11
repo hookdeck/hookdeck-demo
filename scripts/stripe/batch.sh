@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Script to trigger multiple Stripe events based on terraform.tfvars
+
+INVOICE_EVENTS=(
+  "invoice.created"
+  "invoice.deleted"
+  "invoice.finalization_failed"
+  "invoice.finalized"
+  "invoice.marked_uncollectible"
+  "invoice.overdue"
+  "invoice.overpaid"
+  "invoice.paid"
+  "invoice.payment_action_required"
+  "invoice.payment_failed"
+  "invoice.payment_succeeded"
+  "invoice.sent"
+  "invoice.upcoming"
+  "invoice.updated"
+  "invoice.voided"
+  "invoice.will_be_due"
+)
+
+SUBSCRIPTION_EVENTS=(
+  "customer.subscription.created"
+  "customer.subscription.deleted"
+  "customer.subscription.paused"
+  "customer.subscription.pending_update_applied"
+  "customer.subscription.pending_update_expired"
+  "customer.subscription.resumed"
+  "customer.subscription.trial_will_end"
+  "customer.subscription.updated"
+)
+
+echo "Triggering INVOICE_EVENTS..."
+for event_name in "${INVOICE_EVENTS[@]}"; do
+  echo "Attempting to trigger ${event_name}..."
+  if stripe trigger "${event_name}"; then
+    echo "${event_name} triggered successfully."
+  else
+    echo "Failed to trigger ${event_name}."
+  fi
+  # Consider adding a small delay if Stripe CLI has rate limits or if processing takes time
+  # sleep 0.5
+done
+
+echo ""
+echo "Triggering SUBSCRIPTION_EVENTS..."
+for event_name in "${SUBSCRIPTION_EVENTS[@]}"; do
+  echo "Attempting to trigger ${event_name}..."
+  if stripe trigger "${event_name}"; then
+    echo "${event_name} triggered successfully."
+  else
+    echo "Failed to trigger ${event_name}."
+  fi
+  # Consider adding a small delay
+  # sleep 0.5
+done
+
+echo ""
+echo "All specified Stripe event triggers attempted."
+echo "Please check the output above for the status of each event."
