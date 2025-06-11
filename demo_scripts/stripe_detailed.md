@@ -44,3 +44,9 @@ vercel --prod
 ```
 
 Bulk retry via issue -> View Issues -> Bulk retry
+
+## Event search and retry
+
+- Inspecting, filtering & searching events
+- Looking at payload / searching
+- Manual retry of an event
