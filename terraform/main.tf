@@ -7,7 +7,7 @@ variable "STRIPE_SECRET_KEY" {
 }
 
 variable "BASE_URL" {
-  type = string
+  type    = string
   default = "https://hookdeck-demo.vercel.app/"
 }
 
@@ -71,42 +71,54 @@ resource "hookdeck_source_auth" "stripe_source_auth" {
 }
 
 resource "hookdeck_destination" "invoice_ingestion" {
-  name = "invoice_ingestion"
+  name = "invoices-api"
   type = "HTTP"
   config = jsonencode({
-    url       = "${var.BASE_URL}api/stripe/invoices"
+    url               = "${var.BASE_URL}api/stripe/invoices"
     rate_limit        = 10
     rate_limit_period = "concurrent"
-    auth_type = "HOOKDECK_SIGNATURE"
-    auth = {}
+    auth_type         = "HOOKDECK_SIGNATURE"
+    auth              = {}
   })
 }
 
 resource "hookdeck_destination" "subscription_ingestion" {
-  name = "subscription_ingestion"
+  name = "subscriptions-api"
   type = "HTTP"
   config = jsonencode({
-    url       = "${var.BASE_URL}api/stripe/subscriptions"
+    url               = "${var.BASE_URL}api/stripe/subscriptions"
     rate_limit        = 10
-    rate_limit_period = "hour"
-    auth_type = "HOOKDECK_SIGNATURE"
-    auth = {}
+    rate_limit_period = "minute"
+    auth_type         = "HOOKDECK_SIGNATURE"
+    auth              = {}
   })
 }
 
 resource "hookdeck_connection" "invoice_connection" {
   source_id      = hookdeck_source.stripe_source.id
   destination_id = hookdeck_destination.invoice_ingestion.id
-  name = "conn_invoices"
+  name           = "invoices"
   rules = [
     {
       filter_rule = {
         body = {
           json = jsonencode({
-            # type = { "$or" : var.INVOICE_EVENTS }
-            type = { "$startsWith": "invoice." }
+            type = { "$startsWith" : "invoice." }
+            data = {
+              object = {
+                subtotal = { "$gt" : 0 }
+              }
+            }
           })
         }
+      }
+
+    },
+    {
+      retry_rule = {
+        count    = 5
+        interval = 30000
+        strategy = "exponential"
       }
     }
   ]
@@ -115,16 +127,23 @@ resource "hookdeck_connection" "invoice_connection" {
 resource "hookdeck_connection" "subscription_connection" {
   source_id      = hookdeck_source.stripe_source.id
   destination_id = hookdeck_destination.subscription_ingestion.id
-  name = "conn_subscriptions"
+  name           = "subscriptions"
   rules = [
     {
       filter_rule = {
         body = {
           json = jsonencode({
-            # type = { "$or" : var.INVOICE_EVENTS }
-            type = { "$startsWith": "customer.subscription." }
+            type = { "$startsWith" : "customer.subscription." }
           })
         }
+      }
+
+    },
+    {
+      retry_rule = {
+        count    = 5
+        interval = 30000
+        strategy = "exponential"
       }
     }
   ]
