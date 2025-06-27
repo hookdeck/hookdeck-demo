@@ -1,0 +1,4 @@
+HOOKDECK_API_KEY = "<YOUR_HOOKDECK_API_KEY>"
+STRIPE_SECRET_KEY = "<YOUR_STRIPE_SECRET_KEY>"
+
+BASE_URL = "https://hookdeck-demo.vercel.app/"
