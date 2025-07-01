@@ -8,7 +8,9 @@
     "build": "tsc",
     "serve": "node dist/index.js",
     "stripe:trigger": "ts-node scripts/stripe-trigger.ts",
-    "hookdeck:listen": "ts-node scripts/hookdeck-listen.ts"
+    "hookdeck:listen": "ts-node scripts/hookdeck-listen.ts",
+    "hookdeck:connection": "ts-node scripts/hookdeck-get-connection.ts",
+    "hookdeck:upsert": "ts-node scripts/hookdeck-upsert-connection.ts"
   },
   "keywords": [],
   "author": "",
