@@ -1,0 +1,23 @@
+{
+  "name": "transformation-reording",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "trigger:paused-subscription": "ts-node src/send-paused-subscription.ts",
+    "trigger:trial-ending-soon": "ts-node src/send-trial-ending-soon.ts",
+    "trigger:generic-update": "ts-node src/send-generic-update.ts",
+    "trigger:all": "npm run trigger:generic-update && npm run trigger:paused-subscription && npm run trigger:trial-ending-soon"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.4"
+  }
+}

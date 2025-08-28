@@ -1,0 +1,10 @@
+{
+  "event": "subscription.updated",
+  "data": {
+    "id": "sub_paused",
+    "status": "active",
+    "trial_end": null,
+    "pause": true,
+    "metadata": {}
+  }
+}
