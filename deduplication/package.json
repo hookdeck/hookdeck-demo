@@ -1,0 +1,20 @@
+{
+  "name": "hookdeck-dedupe-demo",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "send:one": "ts-node src/sendOne.ts",
+    "send:dupe:same-payload": "ts-node src/sendDupes.ts payload",
+    "send:dupe:same-id": "ts-node src/sendDupes.ts id",
+    "send:flood": "ts-node src/sendFlood.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "chalk": "^5.6.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}
