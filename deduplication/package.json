@@ -5,7 +5,7 @@
   "scripts": {
     "send:one": "ts-node src/sendOne.ts",
     "send:dupe:same-payload": "ts-node src/sendDupes.ts payload",
-    "send:dupe:same-id": "ts-node src/sendDupes.ts id",
+    "send:dupe:different-timestamp": "ts-node src/sendDupes.ts timestamp",
     "send:flood": "ts-node src/sendFlood.ts"
   },
   "keywords": [],
