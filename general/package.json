@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "shopify:trigger": "node scripts/shopify/trigger.ts",
+    "shopify:trigger": "npx tsx --env-file .env scripts/shopify/trigger.ts",
     "stripe:batch": "./scripts/stripe/batch.sh",
     "stripe:batch:invoice": "./scripts/stripe/batch.sh invoice",
     "stripe:batch:subs": "./scripts/stripe/batch.sh subscription",

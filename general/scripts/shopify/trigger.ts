@@ -1,3 +1,5 @@
+import { createHmac } from "crypto";
+
 process.loadEnvFile();
 
 const shopifyOrderCreated = {
@@ -402,12 +404,31 @@ if (!url) {
 
 const main = async () => {
   console.log("Sending event to " + url);
+
+  const payload = JSON.stringify(shopifyOrderCreated);
+
+  // Generate HMAC-SHA256 signature using Shopify secret
+  const secret = process.env.SHOPIFY_CLIENT_SECRET;
+  if (!secret) {
+    console.error("Missing SHOPIFY_CLIENT_SECRET environment variable");
+    process.exit(1);
+  }
+
+  const hmac = createHmac("sha256", secret);
+  hmac.update(payload, "utf8");
+  const signature = hmac.digest("base64");
+
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "X-Shopify-Hmac-SHA256": signature,
+      "X-Shopify-Topic": "orders/create",
+      "X-Shopify-Shop-Domain": "jsmith.myshopify.com",
+      "X-Shopify-Webhook-Id": "sequenced_webhook_id",
+      "X-Shopify-Event-Id": "sequenced_event_id",
     },
-    body: JSON.stringify(shopifyOrderCreated),
+    body: payload,
   });
 
   console.log(await response.json());
