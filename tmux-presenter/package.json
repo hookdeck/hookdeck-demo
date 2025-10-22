@@ -1,0 +1,34 @@
+{
+  "name": "@hookdeck/tmux-presenter",
+  "version": "0.1.0",
+  "description": "A framework for creating automated, interactive tmux-based presentations with speaker notes",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "tmux-presenter": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "tmux",
+    "presentation",
+    "demo",
+    "automation",
+    "terminal",
+    "speaker-notes"
+  ],
+  "author": "Hookdeck",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^20.11.0",
+    "js-yaml": "^4.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9"
+  }
+}

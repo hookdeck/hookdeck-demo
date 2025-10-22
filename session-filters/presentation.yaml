@@ -1,0 +1,319 @@
+# Hookdeck CLI Demo Presentation Configuration
+# This file defines the tmux-based presentation for the session-filters demo
+
+metadata:
+  name: "Hookdeck CLI Demo – Interactive Mode & Session Filters"
+  duration: "2 minutes"
+  tone: "Developer-to-developer"
+  description: |
+    Demonstrates how Hookdeck CLI's interactive mode and session filters
+    help developers debug webhooks faster by filtering out noise and 
+    providing clear visibility into events.
+
+environment:
+  variables:
+    - name: HOOKDECK_URL
+      required: true
+      source: .env
+      description: "Your Hookdeck endpoint URL"
+  workingDirectory: ./
+  checks:
+    - command: "which tmux"
+      errorMessage: "tmux is not installed. Please install it first."
+    - command: "test -f .env"
+      errorMessage: "Missing .env file with HOOKDECK_URL"
+
+layout:
+  sessionName: hookdeck-demo
+  terminal:
+    spawn: true
+    title: "Hookdeck Demo - Presentation View"
+    width: 1200
+    height: 600
+  controller:
+    title: "Hookdeck Demo - Presenter View"
+  panes:
+    - id: sender
+      title: "WEBHOOK SENDER"
+      position: 0
+      width: 33%
+      initialCommand: "clear"
+    - id: cli
+      title: "HOOKDECK CLI"
+      position: 1
+      width: 34%
+      defaultFocus: true
+      initialCommand: "clear"
+    - id: server
+      title: "SERVER"
+      position: 2
+      width: 33%
+      initialCommand: "clear"
+
+steps:
+  # Title Scene
+  - id: title
+    title: "Title Screen"
+    duration: "5s"
+    speakerNotes: |
+      # Title (5s)
+      
+      **Key Message:**
+      When you're testing webhooks locally, things can get noisy fast.
+      You might see events triggered by your teammates or from other systems.
+      
+      **Introduce two features:**
+      - Interactive mode (on by default)
+      - Session filters (filter at the gateway level)
+      
+      Both help you debug faster and stay focused.
+    actions:
+      - type: prompt
+        message: "Hookdeck CLI Demo - Press ENTER to begin..."
+
+  # Scene 1: Setup and show the noise (40s)
+  - id: scene1_setup
+    title: "Scene 1 - Setup Server"
+    duration: "40s"
+    speakerNotes: |
+      # Scene 1 – Setup and show the noise (40s)
+      
+      **Talking Points:**
+      - Simple local server that logs each webhook
+      - Server is already set up
+      - Focus on the webhook testing workflow
+      
+      **Expected Output:**
+      ```
+      [13:27:21] Server listening on port 3000
+      [13:27:21] Webhook URL: http://localhost:3000/webhooks/github
+      ```
+    actions:
+      - type: command
+        pane: server
+        command: "npm run server"
+        wait: true
+        prompt: "Scene 1 - Setup and show the noise (40s)\nStarting the server..."
+        typeSpeed: 50
+      - type: pause
+        duration: 2000
+
+  - id: scene1_listen
+    title: "Start Hookdeck Listen"
+    speakerNotes: |
+      **Talking Points:**
+      - hookdeck listen command proxies webhooks to local server
+      - Interactive mode is ON by default
+      - Live terminal view of incoming events
+      
+      **Command Explanation:**
+      - 3000: local server port
+      - github: source name in Hookdeck
+      - --path: webhook endpoint path
+    actions:
+      - type: command
+        pane: cli
+        command: "hookdeck listen 3000 github --path /webhooks/github"
+        wait: true
+        prompt: "Starting hookdeck listen (without filters)..."
+        typeSpeed: 30
+      - type: pause
+        duration: 3000
+
+  - id: scene1_noise
+    title: "Trigger Webhook Noise"
+    speakerNotes: |
+      **Talking Points:**
+      - Simulating a noisy shared environment
+      - Multiple GitHub event types
+      - This is what happens without filtering
+      
+      **Events being sent:**
+      - push events
+      - issues events  
+      - pull_request events
+      - star events
+      - watch events
+      - fork events
+      
+      **Problem to highlight:**
+      Hard to find the events you care about!
+    actions:
+      - type: command
+        pane: sender
+        command: "npm run webhooks -- --url ${HOOKDECK_URL} --verbose --loops 2"
+        wait: true
+        prompt: "Triggering webhook noise (2 loops)...\nThis will send multiple event types."
+        typeSpeed: 30
+      - type: prompt
+        message: |
+          Scene 1 complete.
+          Notice all the different event types coming through.
+
+  # Scene 2: Apply session filters (35s)
+  - id: scene2_stop_cli
+    title: "Scene 2 - Stop CLI"
+    duration: "35s"
+    speakerNotes: |
+      # Scene 2 – Apply session filters (35s)
+      
+      **Key Points:**
+      - Session filters are temporary (only for this session)
+      - Filtering happens at Hookdeck's gateway
+      - Events are filtered BEFORE delivery
+      - No changes to webhook source needed
+    actions:
+      - type: signal
+        pane: cli
+        signal: "C-c"
+        wait: true
+        prompt: "Scene 2 - Apply session filters (35s)\nStopping hookdeck listen..."
+      - type: pause
+        duration: 1000
+
+  - id: scene2_restart_filtered
+    title: "Restart with Session Filter"
+    speakerNotes: |
+      **Command Breakdown:**
+      - Same base command as before
+      - Adding --filter-headers flag
+      - Filtering for x-github-event: pull_request
+      - Only pull_request events will come through
+      
+      **Expected Output:**
+      ```
+      ⚙️ Active session filters:
+        headers = {"x-github-event":"pull_request"}
+      Only matching events will be forwarded.
+      ```
+    actions:
+      - type: command
+        pane: cli
+        command: "hookdeck listen 3000 github --path /webhooks/github --filter-headers '{\"x-github-event\":\"pull_request\"}'"
+        wait: true
+        prompt: "Restarting hookdeck listen WITH session filter...\nFiltering for pull_request events only."
+        typeSpeed: 30
+      - type: pause
+        duration: 3000
+
+  - id: scene2_filtered_test
+    title: "Test Filtered Webhooks"
+    speakerNotes: |
+      **What to observe:**
+      - Same webhook sequence as before
+      - But only pull_request events come through
+      - All other events filtered at gateway
+      - Much cleaner debugging experience
+      
+      **Key Benefit:**
+      Focus on exactly what you're testing!
+    actions:
+      - type: command
+        pane: sender
+        command: "npm run webhooks -- --url ${HOOKDECK_URL} --verbose --loops 1"
+        wait: true
+        prompt: "Triggering webhooks again (1 loop)...\nOnly pull_request events should come through."
+        typeSpeed: 30
+      - type: prompt
+        message: |
+          Scene 2 complete.
+          Notice only pull_request events were received!
+
+  # Scene 3: Interactive Mode (30s)
+  - id: scene3_interactive
+    title: "Scene 3 - Interactive Mode"
+    duration: "30s"
+    speakerNotes: |
+      # Scene 3 – Explore with interactive mode (30s)
+      
+      **Interactive Mode Features:**
+      - Navigate through events with arrow keys
+      - View full request/response details
+      - Retry failed deliveries instantly
+      - Jump to web dashboard for deeper inspection
+      
+      **Keyboard Shortcuts:**
+      - ↑↓ = Navigate events
+      - d = View details (request/response)
+      - r = Retry delivery
+      - o = Open in dashboard
+      - q = Quit interactive mode
+      
+      **Let audience try it:**
+      Give them 15-20 seconds to explore
+    actions:
+      - type: focus
+        pane: cli
+      - type: prompt
+        message: |
+          Scene 3 - Explore with interactive mode (30s)
+          
+          In the Hookdeck CLI pane, you can:
+            ↑↓ - Navigate events
+            d  - View details
+            r  - Retry delivery
+            o  - Open in dashboard
+            q  - Quit
+          
+          Try interacting with the events now.
+
+  # Scene 4: Wrap-up (10-15s)
+  - id: scene4_wrapup
+    title: "Scene 4 - Wrap-up"
+    duration: "10-15s"
+    speakerNotes: |
+      # Scene 4 – Wrap-up (10–15s)
+      
+      **Key Takeaways:**
+      1. Session filters = focused local testing
+      2. Interactive mode = clear visibility & control
+      3. No more webhook noise during development
+      
+      **Call to Action:**
+      Update to latest Hookdeck CLI to try these features
+      
+      **Installation:**
+      - brew upgrade hookdeck-cli
+      - npm update -g hookdeck-cli
+    actions:
+      - type: prompt
+        message: |
+          Scene 4 - Wrap-up (10-15s)
+          
+          Demo complete!
+          
+          To stop all processes:
+          - Ctrl+C in each pane
+          - Or exit tmux session: 'tmux kill-session -t hookdeck-demo'
+
+# Navigation shortcuts
+navigation:
+  shortcuts:
+    - key: "n"
+      action: "next"
+      description: "Next step"
+    - key: "p"
+      action: "previous"
+      description: "Previous step"
+    - key: "r"
+      action: "restart"
+      description: "Restart presentation"
+    - key: "g"
+      action: "goto"
+      description: "Go to specific step"
+    - key: "q"
+      action: "quit"
+      description: "Quit presentation"
+  
+  autoAdvance:
+    enabled: false
+    defaultDelay: 1000
+
+# Presentation settings
+settings:
+  showProgress: true
+  showStepNumbers: true
+  showDuration: true
+  confirmBeforeQuit: true
+  logCommands: true
+  recordSession: false

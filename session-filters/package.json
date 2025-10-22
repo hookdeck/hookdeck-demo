@@ -5,7 +5,7 @@
   "scripts": {
     "webhooks": "ts-node src/github_webhook_noise.ts",
     "server": "ts-node src/server.ts",
-    "walkthrough": "ts-node src/walkthrough.ts --"
+    "walkthrough": "tmux-presenter present presentation.yaml"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +16,7 @@
     "@types/node": "^20.11.0",
     "axios": "^1.6.5",
     "express": "^4.18.2",
+    "tmux-presenter": "file:../tmux-presenter",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   }

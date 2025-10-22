@@ -171,57 +171,18 @@ hookdeck listen 3000 github \
 
 ## Automated Walkthrough
 
-Run an automated, interactive walkthrough that demonstrates the complete filtering workflow:
+Run an automated, interactive walkthrough that demonstrates the complete filtering workflow in a multi-pane terminal setup:
 
 ```bash
 npm run walkthrough
 ```
 
-### What Happens
+This command uses the [tmux-presenter](../tmux-presenter) framework to orchestrate an automated demonstration. The walkthrough guides you through 4 scenes showing webhook noise filtering in action, with commands automatically executed in a 3-pane terminal layout.
 
-When you run the walkthrough command:
-
-1. **Controller Window** - Runs in your current terminal where you can:
-   - See step-by-step instructions for each scene
-   - Press ENTER to execute commands in the demo panes
-   - Control the flow of the demonstration
-
-2. **New Terminal Window** - A separate terminal window opens with a 3-way horizontal split containing:
-   - **Left pane:** WEBHOOK SENDER - Sends simulated GitHub webhook events
-   - **Middle pane:** HOOKDECK CLI - Routes and filters webhooks
-   - **Right pane:** SERVER - Your local webhook receiver
-
-### Walkthrough Scenes
-
-The walkthrough guides you through 4 scenes:
-
-1. **Scene 1 - Setup and show the noise (40s)**
-   - Starts the local server
-   - Starts Hookdeck CLI without filters
-   - Sends webhook noise (all 8 event types pass through)
-
-2. **Scene 2 - Apply session filters (35s)**
-   - Stops Hookdeck CLI
-   - Restarts with session filter for pull_request events only
-   - Sends webhooks again (only pull_request events pass through)
-
-3. **Scene 3 - Explore with interactive mode (30s)**
-   - Navigate events in Hookdeck CLI using arrow keys
-   - View details, retry deliveries, open in dashboard
-
-4. **Scene 4 - Wrap-up (10-15s)**
-   - Summary and cleanup instructions
-
-### Cleanup
-
-After the walkthrough completes, the tmux session remains running in the separate terminal window. To clean up:
-
-```bash
-# Kill the tmux session
-tmux kill-session -t hookdeck-demo
-```
-
-Or press Ctrl+C in each pane of the demo window.
+**For details on:**
+- The presentation configuration and scene definitions, see [`presentation.yaml`](./presentation.yaml)
+- Step-by-step manual walkthrough instructions, see [`walkthrough.md`](./walkthrough.md)
+- The available npm scripts, see [`package.json`](./package.json)
 
 ## Demo Workflow
 
