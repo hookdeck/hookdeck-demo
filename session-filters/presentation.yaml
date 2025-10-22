@@ -58,15 +58,9 @@ steps:
     speakerNotes: |
       # Title (5s)
       
-      **Key Message:**
-      When you're testing webhooks locally, things can get noisy fast.
-      You might see events triggered by your teammates or from other systems.
-      
-      **Introduce two features:**
-      - Interactive mode (on by default)
-      - Session filters (filter at the gateway level)
-      
-      Both help you debug faster and stay focused.
+      When you're testing webhooks locally, it can be hard to debug what's happening.
+      Events from teammates and other systems create noise, and inspecting or replaying specific events is tedious.
+      That's why the Hookdeck CLI now includes session filters to cut through the noise, and interactive mode to make it easy to inspect and replay the events you care about directly from your terminal.
     actions:
       - type: prompt
         message: "Hookdeck CLI Demo - Press ENTER to begin..."
@@ -76,18 +70,7 @@ steps:
     title: "Scene 1 - Setup Server"
     duration: "40s"
     speakerNotes: |
-      # Scene 1 – Setup and show the noise (40s)
-      
-      **Talking Points:**
-      - Simple local server that logs each webhook
-      - Server is already set up
-      - Focus on the webhook testing workflow
-      
-      **Expected Output:**
-      ```
-      [13:27:21] Server listening on port 3000
-      [13:27:21] Webhook URL: http://localhost:3000/webhooks/github
-      ```
+      Let's begin by running a simple local server that just logs each webhook it receives.
     actions:
       - type: command
         pane: server
@@ -101,15 +84,7 @@ steps:
   - id: scene1_listen
     title: "Start Hookdeck Listen"
     speakerNotes: |
-      **Talking Points:**
-      - hookdeck listen command proxies webhooks to local server
-      - Interactive mode is ON by default
-      - Live terminal view of incoming events
-      
-      **Command Explanation:**
-      - 3000: local server port
-      - github: source name in Hookdeck
-      - --path: webhook endpoint path
+      Now, let's run the `hookdeck listen` command. The new Interactive mode is on by default, so you'll see a live terminal view of incoming events.
     actions:
       - type: command
         pane: cli
@@ -123,21 +98,9 @@ steps:
   - id: scene1_noise
     title: "Trigger Webhook Noise"
     speakerNotes: |
-      **Talking Points:**
-      - Simulating a noisy shared environment
-      - Multiple GitHub event types
-      - This is what happens without filtering
+      In another terminal, I'll trigger a burst of GitHub-style webhooks to simulate a noisy shared environment.
       
-      **Events being sent:**
-      - push events
-      - issues events  
-      - pull_request events
-      - star events
-      - watch events
-      - fork events
-      
-      **Problem to highlight:**
-      Hard to find the events you care about!
+      Here's the problem — lots of webhooks of various event types hitting your listener all at once. But you may only care about one or two of those event types.
     actions:
       - type: command
         pane: sender
@@ -157,11 +120,8 @@ steps:
     speakerNotes: |
       # Scene 2 – Apply session filters (35s)
       
-      **Key Points:**
-      - Session filters are temporary (only for this session)
-      - Filtering happens at Hookdeck's gateway
-      - Events are filtered BEFORE delivery
-      - No changes to webhook source needed
+      Session filters let you narrow that stream to only the events you care about while this session is active.
+      The filtering happens in the Hookdeck Event Gateway before the events are delivered to you.
     actions:
       - type: signal
         pane: cli
@@ -174,18 +134,7 @@ steps:
   - id: scene2_restart_filtered
     title: "Restart with Session Filter"
     speakerNotes: |
-      **Command Breakdown:**
-      - Same base command as before
-      - Adding --filter-headers flag
-      - Filtering for x-github-event: pull_request
-      - Only pull_request events will come through
-      
-      **Expected Output:**
-      ```
-      ⚙️ Active session filters:
-        headers = {"x-github-event":"pull_request"}
-      Only matching events will be forwarded.
-      ```
+      > "Now, I'll restart `hookdeck listen`, this time adding a session filter to only allow `pull_request` events through."
     actions:
       - type: command
         pane: cli
@@ -199,14 +148,10 @@ steps:
   - id: scene2_filtered_test
     title: "Test Filtered Webhooks"
     speakerNotes: |
-      **What to observe:**
-      - Same webhook sequence as before
-      - But only pull_request events come through
-      - All other events filtered at gateway
-      - Much cleaner debugging experience
+      > "Now I'll trigger the same webhook sequence again."
       
-      **Key Benefit:**
-      Focus on exactly what you're testing!
+      > "This time only pull-request events make it through.
+      > Once you stop `listen`, the filters disappear — the filters aren't persisted in the Hookdeck Event Gateway."
     actions:
       - type: command
         pane: sender
@@ -226,21 +171,8 @@ steps:
     speakerNotes: |
       # Scene 3 – Explore with interactive mode (30s)
       
-      **Interactive Mode Features:**
-      - Navigate through events with arrow keys
-      - View full request/response details
-      - Retry failed deliveries instantly
-      - Jump to web dashboard for deeper inspection
-      
-      **Keyboard Shortcuts:**
-      - ↑↓ = Navigate events
-      - d = View details (request/response)
-      - r = Retry delivery
-      - o = Open in dashboard
-      - q = Quit interactive mode
-      
-      **Let audience try it:**
-      Give them 15-20 seconds to explore
+      > "Interactive mode gives you an easier way to inspect and replay events.
+      > You can scroll through them, view the request and response details, retry a delivery, or jump straight to the dashboard."
     actions:
       - type: focus
         pane: cli
@@ -264,17 +196,9 @@ steps:
     speakerNotes: |
       # Scene 4 – Wrap-up (10–15s)
       
-      **Key Takeaways:**
-      1. Session filters = focused local testing
-      2. Interactive mode = clear visibility & control
-      3. No more webhook noise during development
-      
-      **Call to Action:**
-      Update to latest Hookdeck CLI to try these features
-      
-      **Installation:**
-      - brew upgrade hookdeck-cli
-      - npm update -g hookdeck-cli
+      Session filters keep your local testing focused.
+      Interactive mode gives you clear visibility into every event, and the ability to inspect and replay them directly from your terminal.
+      Update to the v1.1.0 of the Hookdeck CLI try out these new features.
     actions:
       - type: prompt
         message: |
