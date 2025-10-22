@@ -84,7 +84,7 @@ steps:
   - id: scene1_listen
     title: "Start Hookdeck Listen"
     speakerNotes: |
-      Now, let's run the `hookdeck listen` command. The new Interactive mode is on by default, so you'll see a live terminal view of incoming events.
+      Now, let's run the Hookdeck CLI `listen` command. The new Interactive mode is on by default, so you'll see a live terminal view of incoming events as you did in previous versions. We'll go into the interactive part shortly.
     actions:
       - type: command
         pane: cli
@@ -99,8 +99,10 @@ steps:
     title: "Trigger Webhook Noise"
     speakerNotes: |
       In another terminal, I'll trigger a burst of GitHub-style webhooks to simulate a noisy shared environment.
+
+      Action: Start npm run webhooks command
       
-      Here's the problem — lots of webhooks of various event types hitting your listener all at once. But you may only care about one or two of those event types.
+      Here's the problem — lots of webhooks of various event types hitting your endpoint all at once. But you may only care about one or two of those event types.
     actions:
       - type: command
         pane: sender
@@ -134,7 +136,10 @@ steps:
   - id: scene2_restart_filtered
     title: "Restart with Session Filter"
     speakerNotes: |
-      > "Now, I'll restart `hookdeck listen`, this time adding a session filter to only allow `pull_request` events through."
+      Now, I'll restart `hookdeck listen`, this time adding a session filter to only allow `pull_request` events through.
+
+
+      You'll see the filter is applied on the x-github-event header looking for a value of "pull_request"
     actions:
       - type: command
         pane: cli
@@ -148,10 +153,12 @@ steps:
   - id: scene2_filtered_test
     title: "Test Filtered Webhooks"
     speakerNotes: |
-      > "Now I'll trigger the same webhook sequence again."
+      Action: Start npm run webhooks command
       
-      > "This time only pull-request events make it through.
-      > Once you stop `listen`, the filters disappear — the filters aren't persisted in the Hookdeck Event Gateway."
+      Now I'll trigger the same webhook sequence again.
+      
+      This time only the 3 pull-request events make it through.
+      Once you stop `listen`, the filters disappear — the filters aren't persisted in the Hookdeck Event Gateway.
     actions:
       - type: command
         pane: sender
@@ -161,54 +168,46 @@ steps:
         typeSpeed: 30
       - type: prompt
         message: |
-          Scene 2 complete.
-          Notice only pull_request events were received!
+          As required, only the pull_request events reach the Hookdeck CLI and, most importantly, your local server.
 
   # Scene 3: Interactive Mode (30s)
   - id: scene3_interactive
     title: "Scene 3 - Interactive Mode"
     duration: "30s"
     speakerNotes: |
-      # Scene 3 – Explore with interactive mode (30s)
+      Now, let's explore Interactive mode in more detail.
       
-      > "Interactive mode gives you an easier way to inspect and replay events.
-      > You can scroll through them, view the request and response details, retry a delivery, or jump straight to the dashboard."
+      Interactive mode gives you an easier way to inspect and replay events.
+
+      I can scroll through the list of received events using the arrow keys.
+
+      I can press `d` to view the details of a specific event, including headers and request and response payloads.
+
+      I can press `r` to replay the event directly from the terminal.
+
+      And I can also press `o` to open the event in the Hookdeck Dashboard for even more detailed inspection and debugging.
     actions:
       - type: focus
         pane: cli
       - type: prompt
         message: |
-          Scene 3 - Explore with interactive mode (30s)
-          
-          In the Hookdeck CLI pane, you can:
-            ↑↓ - Navigate events
-            d  - View details
-            r  - Retry delivery
-            o  - Open in dashboard
-            q  - Quit
-          
-          Try interacting with the events now.
+          Action: Demo scrolling, inspecting, replaying events, and opening the event in the Hookdeck Dashboard.
 
   # Scene 4: Wrap-up (10-15s)
   - id: scene4_wrapup
     title: "Scene 4 - Wrap-up"
     duration: "10-15s"
     speakerNotes: |
-      # Scene 4 – Wrap-up (10–15s)
+      And that's it!
       
       Session filters keep your local testing focused.
+
       Interactive mode gives you clear visibility into every event, and the ability to inspect and replay them directly from your terminal.
       Update to the v1.1.0 of the Hookdeck CLI try out these new features.
     actions:
       - type: prompt
         message: |
-          Scene 4 - Wrap-up (10-15s)
-          
           Demo complete!
-          
-          To stop all processes:
-          - Ctrl+C in each pane
-          - Or exit tmux session: 'tmux kill-session -t hookdeck-demo'
 
 # Navigation shortcuts
 navigation:
