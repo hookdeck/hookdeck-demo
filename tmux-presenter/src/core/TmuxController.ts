@@ -111,16 +111,180 @@ export class TmuxController {
   }
 
   /**
-   * Spawn a new terminal window with tmux session (macOS specific)
+   * Capture pane content with maximum buffer size
+   * Uses -S to capture extensive scrollback history
+   * ANSI escape codes are automatically stripped by default (no -e flag)
    */
-  spawnTerminalWithTmux(projectDir: string): void {
+  capturePane(target: string): string {
+    // Capture with maximum tmux history buffer (32768 lines)
+    const content = this.exec(`capture-pane -p -S -32768 -t "${target}"`);
+    // Strip remaining ANSI escape codes manually
+    return content.replace(/\x1b\[[0-9;]*m/g, '').replace(/\x1b\[.*?[@-~]/g, '');
+  }
+
+  /**
+   * Get the current width of a pane
+   */
+  getPaneWidth(target: string): number {
+    const output = this.exec(`display-message -p -t "${target}" "#{pane_width}"`);
+    return parseInt(output.trim(), 10);
+  }
+
+  /**
+   * Get the window width (total terminal width)
+   */
+  getWindowWidth(target: string): number {
+    const output = this.exec(`display-message -p -t "${target}" "#{window_width}"`);
+    return parseInt(output.trim(), 10);
+  }
+
+  /**
+   * Resize a pane to a specific width (in columns)
+   */
+  resizePaneWidth(target: string, width: number): void {
+    this.exec(`resize-pane -t "${target}" -x ${width}`);
+  }
+
+  /**
+   * Break a pane out into its own window temporarily
+   */
+  breakPaneToWindow(target: string): void {
+    this.exec(`break-pane -d -t "${target}"`);
+  }
+
+  /**
+   * Join a pane from another window back into the current window
+   */
+  joinPaneFromWindow(sourceWindow: string, target: string, position: string = 'after'): void {
+    const direction = position === 'after' ? '-h' : '-v';
+    this.exec(`join-pane ${direction} -s "${sourceWindow}" -t "${target}"`);
+  }
+
+  /**
+   * Maximize a pane to take up the full window (zoom)
+   */
+  maximizePane(target: string): void {
+    this.exec(`resize-pane -t "${target}" -Z`);
+  }
+
+  /**
+   * Get the current layout of the window
+   */
+  getCurrentLayout(target: string): string {
+    return this.exec(`display-message -p -t "${target}" "#{window_layout}"`).trim();
+  }
+
+  /**
+   * Restore a specific layout to the window
+   */
+  restoreLayout(target: string, layout: string): void {
+    this.exec(`select-layout -t "${target}" "${layout}"`);
+  }
+
+  /**
+   * Send Ctrl-L to refresh the display (trigger TUI re-render)
+   */
+  refreshPane(target: string): void {
+    this.exec(`send-keys -t "${target}" C-l`);
+  }
+
+  /**
+   * Send a single keypress to a pane
+   */
+  sendKeypress(target: string, key: string): void {
+    this.exec(`send-keys -t "${target}" ${key}`);
+  }
+
+  /**
+   * Spawn a new terminal window with tmux session (macOS specific)
+   * @param projectDir - The project directory to cd into
+   * @param fontSize - Font size in points (default: 11)
+   * @param width - Window width in pixels (default: 1200)
+   * @param height - Window height in pixels (default: 600)
+   * @param maximize - If true, maximize the window to fill available screen space (overrides width/height)
+   */
+  spawnTerminalWithTmux(
+    projectDir: string,
+    fontSize: number = 11,
+    width: number = 1200,
+    height: number = 600,
+    maximize: boolean = false
+  ): void {
+    let script: string;
+    
+    if (maximize) {
+      // Maximize window to fill available screen space (not full screen mode)
+      // This calculates the usable screen bounds (excluding menu bar and dock)
+      script = `
+        tell application "Terminal"
+          do script "cd '${projectDir}' && tmux attach-session -t ${this.sessionName}"
+          set font size of window 1 to ${fontSize}
+          
+          -- Get the visible frame (screen size minus menu bar and dock)
+          tell application "Finder"
+            set screenBounds to bounds of window of desktop
+            set screenWidth to item 3 of screenBounds
+            set screenHeight to item 4 of screenBounds
+          end tell
+          
+          -- Menu bar is ~23px, dock varies but we use safe margins
+          -- Set bounds to fill available space: {left, top, right, bottom}
+          set bounds of window 1 to {0, 23, screenWidth, screenHeight}
+          activate
+        end tell
+      `;
+    } else {
+      // Use specified width and height
+      script = `
+        tell application "Terminal"
+          do script "cd '${projectDir}' && tmux attach-session -t ${this.sessionName}"
+          set font size of window 1 to ${fontSize}
+          set bounds of window 1 to {0, 0, ${width}, ${height}}
+          activate
+        end tell
+      `;
+    }
+    
+    execSync(`osascript -e '${script}'`, { stdio: 'inherit' });
+  }
+
+  /**
+   * Set the font size of the active Terminal window (macOS specific)
+   */
+  setTerminalFontSize(fontSize: number): void {
     const script = `
       tell application "Terminal"
-        do script "cd '${projectDir}' && tmux attach-session -t ${this.sessionName}"
-        activate
+        set font size of front window to ${fontSize}
       end tell
     `;
     execSync(`osascript -e '${script}'`, { stdio: 'inherit' });
+  }
+
+  /**
+   * Resize the Terminal window to specific dimensions (macOS specific)
+   */
+  resizeTerminalWindow(width: number, height: number): void {
+    const script = `
+      tell application "Terminal"
+        set bounds of front window to {0, 0, ${width}, ${height}}
+      end tell
+    `;
+    execSync(`osascript -e '${script}'`, { stdio: 'inherit' });
+  }
+
+  /**
+   * Get the current Terminal window size (macOS specific)
+   */
+  getTerminalWindowSize(): { width: number; height: number } {
+    const script = `
+      tell application "Terminal"
+        get bounds of front window
+      end tell
+    `;
+    const result = execSync(`osascript -e '${script}'`).toString().trim();
+    // Result format: "0, 23, 1440, 823" (left, top, right, bottom)
+    const [, , right, bottom] = result.split(', ').map(Number);
+    return { width: right, height: bottom };
   }
 
   /**

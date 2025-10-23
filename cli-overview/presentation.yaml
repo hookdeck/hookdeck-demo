@@ -1,0 +1,549 @@
+# Hookdeck CLI Guest Mode Demo Presentation Configuration
+# This file defines the tmux-based presentation for the cli-overview demo
+
+metadata:
+  name: "Hookdeck CLI Guest Mode Demo"
+  duration: "~3 minutes"
+  tone: "Developer-to-developer"
+  description: |
+    Demonstrates Hookdeck CLI guest mode capabilities including:
+    - Guest mode (no authentication required)
+    - Local webhook forwarding
+    - Interactive TUI navigation
+    - Event inspection and replay
+    - Session filters for focusing on specific event types
+
+environment:
+  variables: []
+  # Note: No .env file required - guest mode works without authentication
+  workingDirectory: ./
+  checks:
+    - command: "which tmux"
+      errorMessage: "tmux is not installed. Please install it first."
+    - command: "which hookdeck"
+      errorMessage: "Hookdeck CLI is not installed. Install via: npm install -g @hookdeck/cli"
+    - command: "which node"
+      errorMessage: "Node.js is not installed. Please install it first."
+
+layout:
+  sessionName: hookdeck-cli-overview
+  terminal:
+    spawn: true
+    title: "Hookdeck CLI Overview - Presentation View"
+    maximize: true  # Maximize window (overrides width/height)
+    fontSize: 18    # Font size in points (macOS Terminal.app only)
+  controller:
+    title: "Hookdeck CLI Overview - Presenter View"
+  panes:
+    - id: sender
+      title: "WEBHOOK SENDER"
+      position: 0
+      width: 25%
+      initialCommand: "clear"
+    - id: cli
+      title: "HOOKDECK CLI"
+      position: 1
+      width: 50%
+      defaultFocus: true
+      initialCommand: "clear"
+    - id: server
+      title: "LOCAL SERVER"
+      position: 2
+      width: 25%
+      initialCommand: "clear"
+
+steps:
+  # Scene 1: Title Screen
+  - id: scene1_title
+    title: "Scene 1 - Title Screen"
+    duration: "5s"
+    speakerNotes: |
+      # Scene 1: Title Screen (5s)
+      
+      Welcome to Hookdeck CLI. This demonstration shows how to receive webhooks locally 
+      in guest mode - no signup required.
+      
+      We'll demonstrate:
+      - Starting a local server
+      - Using guest mode to get a public webhook URL
+      - Sending and inspecting webhook events
+      - Navigating the interactive TUI
+      - Using session filters to focus on specific events
+    actions:
+      - type: prompt
+        message: "Hookdeck CLI Guest Mode Demo - Press ENTER to begin..."
+
+  # Scene 2: Start Local Server
+  - id: scene2_start_server
+    title: "Scene 2 - Start Local Server"
+    duration: "10s"
+    speakerNotes: |
+      # Scene 2: Start Local Server (10s)
+      
+      First, we start our local Express server on port 3000 to receive webhooks.
+      This is a simple server that logs incoming webhook events.
+    actions:
+      - type: command
+        pane: server
+        command: "npm run server"
+        wait: true
+        prompt: "Starting local webhook server on port 3000..."
+        typeSpeed: 50
+      - type: pause
+        duration: 2000
+
+  # Scene 3: Start Hookdeck Listen (Guest Mode)
+  - id: scene3_hookdeck_listen
+    title: "Scene 3 - Start Hookdeck Listen"
+    duration: "15s"
+    speakerNotes: |
+      # Scene 3: Start Hookdeck Listen (15s)
+      
+      Next, we run hookdeck listen in guest mode. No authentication needed.
+      It instantly gives us a public webhook URL connected to our local port 3000.
+
+      The command creates a connection using a Source named 'shopify' and a CLI destination that forwards to /webhooks/shopify path.
+      
+      Note: After creating a new source, we wait a few seconds for it to propagate through Hookdeck's system.
+    actions:
+      - type: command
+        pane: cli
+        command: "hookdeck listen 3000 shopify --path /webhooks/shopify --config .hookdeck-guest-config.toml"
+        wait: true
+        prompt: "Starting Hookdeck CLI in guest mode..."
+        typeSpeed: 30
+      - type: pause
+        duration: 1000
+      - type: keypress
+        pane: cli
+        key: "y"
+      - type: pause
+        duration: 500
+      - type: keypress
+        pane: cli
+        key: "Enter"
+      - type: pause
+        duration: 2000
+      - type: capture
+        pane: cli
+        pattern: "https://hkdk\\.events/[a-z0-9]+"
+        variable: HOOKDECK_URL
+        timeout: 5000
+      - type: pause
+        duration: 8000
+
+  # Scene 4: Send Shopify Events
+  - id: scene4_send_events
+    title: "Scene 4 - Send Webhook Events"
+    duration: "30s"
+    speakerNotes: |
+      # Scene 4: Send Webhook Events (30s)
+      
+      We send three different Shopify webhook events:
+      1. An order creation event
+      2. A product update event
+      3. An inventory level update event
+      
+      Watch how they appear in the CLI TUI and get forwarded to our local server.
+      
+      ⚠️ NOTE: Variable Substitution Required
+      - ${HOOKDECK_URL} must be replaced with the actual captured URL
+      - Commands should display the real URL (e.g., https://hkdk.events/abc123xyz)
+      - If automatic substitution isn't available, presenter should manually replace
+    actions:
+      - type: command
+        pane: sender
+        command: |
+          curl -X POST ${HOOKDECK_URL} \
+            -H "Content-Type: application/json" \
+            -H "X-Shopify-Topic: orders/create" \
+            -d '{
+              "id": 1001,
+              "email": "alice@example.com",
+              "total_price": "29.99"
+            }'
+        wait: true
+        prompt: "Sending orders/create event..."
+        typeSpeed: 40
+      - type: pause
+        duration: 2000
+      - type: command
+        pane: sender
+        command: |
+          curl -X POST ${HOOKDECK_URL} \
+            -H "Content-Type: application/json" \
+            -H "X-Shopify-Topic: products/update" \
+            -d '{
+              "id": 2002,
+              "title": "T-shirt",
+              "variants": [{"id": 1, "price": "19.99"}]
+            }'
+        wait: true
+        prompt: "Sending products/update event..."
+        typeSpeed: 40
+      - type: pause
+        duration: 2000
+      - type: command
+        pane: sender
+        command: |
+          curl -X POST ${HOOKDECK_URL} \
+            -H "Content-Type: application/json" \
+            -H "X-Shopify-Topic: inventory_levels/update" \
+            -d '{
+              "inventory_item_id": 3003,
+              "available": 42
+            }'
+        wait: true
+        prompt: "Sending inventory_levels/update event..."
+        typeSpeed: 40
+      - type: pause
+        duration: 2000
+
+  # Scene 5: Navigate Events in TUI
+  - id: scene5_navigate_tui
+    title: "Scene 5 - Navigate Events"
+    duration: "15s"
+    speakerNotes: |
+      # Scene 5: Navigate Events in TUI (15s)
+      
+      Use arrow keys to navigate between events in the TUI.
+      The highlighted event shows key information at a glance.
+      
+      The TUI navigation is automated with arrow key presses.
+    actions:
+      - type: focus
+        pane: cli
+      - type: keypress
+        pane: cli
+        key: "Down"
+      - type: pause
+        duration: 500
+      - type: keypress
+        pane: cli
+        key: "Down"
+      - type: pause
+        duration: 500
+      - type: keypress
+        pane: cli
+        key: "Up"
+      - type: pause
+        duration: 500
+      - type: keypress
+        pane: cli
+        key: "Down"
+      - type: pause
+        duration: 500
+
+  # Scene 6: Inspect Event Details
+  - id: scene6_inspect_details
+    title: "Scene 6 - Inspect Event Details"
+    duration: "20s"
+    speakerNotes: |
+      # Scene 6: Inspect Event Details (20s)
+      
+      Press 'd' to view full event details including all headers and the complete request body.
+      This is perfect for debugging webhook payloads.
+      
+      The detail view shows:
+      - HTTP headers (including X-Shopify-Topic)
+      - Request body (formatted JSON)
+      - Metadata (timestamp, source, destination)
+      
+      Automated keypresses demonstrate the interactive features.
+    actions:
+      - type: keypress
+        pane: cli
+        key: "d"
+      - type: pause
+        duration: 3000
+      - type: keypress
+        pane: cli
+        key: "Down"
+      - type: pause
+        duration: 500
+      - type: keypress
+        pane: cli
+        key: "Down"
+      - type: pause
+        duration: 500
+      - type: keypress
+        pane: cli
+        key: "Down"
+      - type: pause
+        duration: 500
+      - type: keypress
+        pane: cli
+        key: "ESC"
+      - type: pause
+        duration: 1000
+
+  # Scene 7: Retry an Event
+  - id: scene7_retry_event
+    title: "Scene 7 - Retry Event"
+    duration: "15s"
+    speakerNotes: |
+      # Scene 7: Retry an Event (15s)
+      
+      Press 'r' to replay an event. This is incredibly useful for testing your
+      webhook handler without needing to trigger a new event from the source.
+      
+      Watch as the event is re-delivered to the local server and a new log entry appears.
+      
+      An automated keypress triggers the retry.
+    actions:
+      - type: keypress
+        pane: cli
+        key: "r"
+      - type: pause
+        duration: 3000
+
+  # Scene 8: Apply Session Filter
+  - id: scene8_apply_filter
+    title: "Scene 8 - Apply Session Filter"
+    duration: "30s"
+    speakerNotes: |
+      # Scene 8: Apply Session Filter (30s)
+      
+      Session filters let you focus on specific event types. The filtering happens
+      in the Hookdeck Event Gateway before the events are delivered to you.
+      
+      We'll:
+      1. Stop the current session
+      2. Restart with a filter for only orders/create events
+      3. Resend all three webhook events
+      4. Observe that only the order event gets through
+      
+      The new URL is automatically captured.
+    actions:
+      - type: signal
+        pane: cli
+        signal: "C-c"
+        wait: true
+        prompt: "Stopping current Hookdeck session..."
+      - type: pause
+        duration: 1000
+      - type: command
+        pane: cli
+        command: "hookdeck listen 3000 shopify --path /webhooks/shopify --filter-headers '{\"X-Shopify-Topic\": \"orders/create\"}' --config .hookdeck-guest-config.toml"
+        wait: true
+        prompt: "Restarting with session filter for orders/create events only..."
+        typeSpeed: 30
+      - type: capture
+        pane: cli
+        pattern: "https://hkdk\\.events/[a-z0-9]+"
+        variable: HOOKDECK_URL
+        timeout: 5000
+      - type: pause
+        duration: 3000
+      - type: command
+        pane: sender
+        command: |
+          curl -X POST ${HOOKDECK_URL} \
+            -H "Content-Type: application/json" \
+            -H "X-Shopify-Topic: orders/create" \
+            -d '{
+              "id": 1001,
+              "email": "alice@example.com",
+              "total_price": "29.99"
+            }'
+        wait: true
+        prompt: "Resending orders/create event..."
+        typeSpeed: 40
+      - type: pause
+        duration: 2000
+      - type: command
+        pane: sender
+        command: |
+          curl -X POST ${HOOKDECK_URL} \
+            -H "Content-Type: application/json" \
+            -H "X-Shopify-Topic: products/update" \
+            -d '{
+              "id": 2002,
+              "title": "T-shirt",
+              "variants": [{"id": 1, "price": "19.99"}]
+            }'
+        wait: true
+        prompt: "Resending products/update event (should be filtered out)..."
+        typeSpeed: 40
+      - type: pause
+        duration: 2000
+      - type: command
+        pane: sender
+        command: |
+          curl -X POST ${HOOKDECK_URL} \
+            -H "Content-Type: application/json" \
+            -H "X-Shopify-Topic: inventory_levels/update" \
+            -d '{
+              "inventory_item_id": 3003,
+              "available": 42
+            }'
+        wait: true
+        prompt: "Resending inventory_levels/update event (should be filtered out)..."
+        typeSpeed: 40
+      - type: pause
+        duration: 2000
+      - type: prompt
+        message: |
+          Notice: Only the orders/create event appeared in the CLI and server.
+          The other two events were filtered out by the session filter.
+
+  # Scene 9: Error Recovery (OPTIONAL)
+  - id: scene9_error_recovery
+    title: "Scene 9 - Error Recovery (Optional)"
+    duration: "20s"
+    speakerNotes: |
+      # Scene 9: Error Recovery (20s) - OPTIONAL
+      
+      This scene demonstrates what happens when your local development server crashes
+      and how easy it is to recover and retry failed events.
+      
+      We'll:
+      1. Stop the local server
+      2. Send an event (which will fail)
+      3. Observe the error in the CLI
+      4. Restart the server
+      5. Retry the failed event
+      
+      This highlights that events aren't lost during downtime - Hookdeck queues them
+      and you can easily retry once your service is restored.
+      
+      NOTE: This scene is optional and can be skipped if time is limited.
+    actions:
+      - type: signal
+        pane: server
+        signal: "C-c"
+        wait: true
+        prompt: "Stopping local server to simulate downtime..."
+      - type: pause
+        duration: 1000
+      - type: command
+        pane: sender
+        command: |
+          curl -X POST ${HOOKDECK_URL} \
+            -H "Content-Type: application/json" \
+            -H "X-Shopify-Topic: orders/create" \
+            -d '{
+              "id": 3003,
+              "title": "Updated Product",
+              "status": "active"
+            }'
+        wait: true
+        prompt: "Sending event while server is down..."
+        typeSpeed: 40
+      - type: pause
+        duration: 2000
+      - type: prompt
+        message: |
+          Observe: Event appears in CLI with error status (connection refused).
+          Press ENTER to restart server...
+      - type: command
+        pane: server
+        command: "npm run server"
+        wait: true
+        prompt: "Restarting local server..."
+        typeSpeed: 50
+      - type: pause
+        duration: 2000
+      - type: keypress
+        pane: cli
+        key: "r"
+      - type: pause
+        duration: 2000
+      - type: prompt
+        message: |
+          Action: Retry the failed event
+          - Navigate to the failed event (if needed)
+          - Press 'r' to retry
+          - Observe successful delivery to restarted server
+          
+          Press ENTER when complete...
+
+  # Scene 10: Wrap-up
+  - id: scene10_wrapup
+    title: "Scene 10 - Wrap-up"
+    duration: "10s"
+    speakerNotes: |
+      # Scene 10: Wrap-up (10s)
+      
+      That's Hookdeck CLI in guest mode!
+      
+      Key takeaways:
+      - No setup, no authentication required to get started
+      - Public webhook URL instantly connected to localhost
+      - Interactive TUI for easy event inspection and replay
+      - Session filters to focus on what matters
+      - Resilient to local server downtime
+      
+      When you're ready, login to persist connections and share events with your team.
+      Learn more at hookdeck.com/cli
+    actions:
+      # TODO: Add keypress action when implemented
+      # - type: keypress
+      #   pane: cli
+      #   key: "q"
+      # - type: pause
+      #   duration: 1000
+      - type: prompt
+        message: |
+          Action: Quit the CLI session
+          - Press 'q' in the CLI pane to quit
+          
+          Demo complete! Visit hookdeck.com/cli to learn more.
+
+# Navigation shortcuts
+navigation:
+  shortcuts:
+    - key: "n"
+      action: "next"
+      description: "Next step"
+    - key: "p"
+      action: "previous"
+      description: "Previous step"
+    - key: "r"
+      action: "restart"
+      description: "Restart presentation"
+    - key: "g"
+      action: "goto"
+      description: "Go to specific step"
+    - key: "q"
+      action: "quit"
+      description: "Quit presentation"
+  
+  autoAdvance:
+    enabled: false
+    defaultDelay: 1000
+
+# Presentation settings
+settings:
+  showProgress: true
+  showStepNumbers: true
+  showDuration: true
+  confirmBeforeQuit: true
+  logCommands: true
+  recordSession: false
+
+# Implementation Notes:
+# 
+# Required tmux-presenter Enhancements:
+# 
+# 1. URL Capture (type: capture)
+#    - Capture output matching regex pattern from pane
+#    - Store in variable for substitution in subsequent commands
+#    - Pattern: https://hkdk\.events/[a-z0-9]+
+#    - Variable: HOOKDECK_URL
+# 
+# 2. Keypress Actions (type: keypress)
+#    - Send individual keypresses to pane (arrow keys, 'd', 'r', 'q', ESC)
+#    - Required for TUI navigation automation
+# 
+# 3. Variable Substitution
+#    - Replace ${HOOKDECK_URL} with captured value in command strings
+#    - Display actual URL in pane, not the variable reference
+#    - Must show real URL (e.g., https://hkdk.events/abc123xyz) for visibility
+# 
+# Fallback Approach:
+# If these features are not yet implemented, the presenter should:
+# - Manually note the URL when it appears after hookdeck listen
+# - Manually replace ${HOOKDECK_URL} in commands before execution
+# - Perform keyboard actions manually when prompted
+# - Use the prompt messages as cues for manual intervention

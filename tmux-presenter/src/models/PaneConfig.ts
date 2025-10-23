@@ -18,6 +18,8 @@ export interface TerminalConfig {
   title?: string;
   width?: number;
   height?: number;
+  fontSize?: number; // Font size in points (macOS Terminal.app only)
+  maximize?: boolean; // Maximize the terminal window (macOS Terminal.app only, overrides width/height)
 }
 
 /**

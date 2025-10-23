@@ -91,8 +91,10 @@ layout:
   terminal:
     spawn: true
     title: "Presentation View"
-    width: 1200
-    height: 600
+    width: 1200      # Window width in pixels (ignored if maximize: true)
+    height: 600      # Window height in pixels (ignored if maximize: true)
+    fontSize: 11     # Font size in points (macOS Terminal.app only, default: 11)
+    maximize: false  # Maximize window (macOS only, overrides width/height)
   panes:
     - id: pane1
       title: "PANE TITLE"
@@ -167,8 +169,10 @@ layout:
   terminal:                            # Optional: spawn new terminal
     spawn: true                        # Open new terminal window (macOS only)
     title: "Presentation View"
-    width: 1200
-    height: 600
+    width: 1200                        # Window width in pixels (ignored if maximize: true)
+    height: 600                        # Window height in pixels (ignored if maximize: true)
+    fontSize: 11                       # Font size in points (macOS only, default: 11)
+    maximize: false                    # Maximize window (macOS only, overrides width/height)
   panes:                               # Required: at least one pane
     - id: terminal1                    # Unique pane identifier
       title: "SERVER"                  # Display title
@@ -177,6 +181,16 @@ layout:
       defaultFocus: true               # Focus this pane on start
       initialCommand: "clear"          # Run on pane creation
 ```
+
+**Terminal configuration options:**
+- `spawn`: Whether to open a new terminal window (macOS only)
+- `title`: Window title (optional)
+- `width`: Window width in pixels (default: 1200, ignored if `maximize: true`)
+- `height`: Window height in pixels (default: 600, ignored if `maximize: true`)
+- `fontSize`: Font size in points (default: 11, macOS Terminal.app only)
+- `maximize`: Maximize the terminal window (default: false, macOS only, overrides width/height)
+
+**Note:** The `maximize` option uses macOS accessibility features to set the terminal to full screen mode. When enabled, `width` and `height` settings are ignored.
 
 **Layout behavior:**
 - Panes are arranged horizontally from left to right
@@ -334,6 +348,124 @@ Change which pane has focus in the tmux session.
 
 **Parameters:**
 - `pane` (required): Target pane ID to focus
+
+#### `capture` - Capture text from pane output
+
+Capture text from pane output using regex and store it as an environment variable for use in subsequent commands.
+
+```yaml
+# Capture URL from CLI output
+- type: capture
+  pane: cli
+  pattern: "https://hkdk\\.events/[a-z0-9]+"
+  variable: HOOKDECK_URL
+  timeout: 5000  # optional, default: 5000ms
+```
+
+**Parameters:**
+- `pane` (required): Pane ID to capture from
+- `pattern` (required): Regex pattern to match
+- `variable` (required): Variable name to store captured value
+- `timeout` (optional): Max time to wait for pattern in milliseconds (default: 5000)
+
+**How it works:**
+- Reads pane content using `tmux capture-pane`
+- Applies regex pattern to find match
+- Extracts captured text (first match, group 0)
+- Stores as environment variable (accessible via `${VARIABLE}` in subsequent commands)
+- Polls every 100ms until pattern found or timeout reached
+- Throws error if pattern not found within timeout
+
+**⚠️ IMPORTANT - TUI Width Workaround (macOS only):**
+
+For TUI applications that truncate output based on terminal width (like Hookdeck CLI), the capture action uses a temporary window resize workaround:
+
+1. Saves the original terminal window size
+2. Temporarily resizes the window to 5000px wide to maximize columns
+3. Waits for the TUI to detect the resize and re-render with full content
+4. Captures the content using tmux capture-pane
+5. Immediately restores the original window size
+
+**Note for presenters:** You may see a brief "flash" where the terminal window expands very wide during capture (~1 second). This is expected behavior and necessary to capture truncated URLs or long text that doesn't fit in the normal terminal width. The window returns to normal size immediately after capture.
+
+**Example use case:**
+```yaml
+# Capture URL from Hookdeck CLI listen output
+- type: capture
+  pane: cli
+  pattern: "https://hkdk\\.events/[a-z0-9]+"
+  variable: HOOKDECK_URL
+  timeout: 5000
+  
+# Use captured URL in subsequent command
+- type: command
+  pane: sender
+  command: "curl ${HOOKDECK_URL}/webhook"
+```
+
+#### `keypress` - Send keypresses for TUI navigation
+
+Send individual keypresses to panes for automated TUI (Text User Interface) navigation.
+
+```yaml
+# Navigate down in a TUI
+- type: keypress
+  pane: cli
+  key: "Down"
+  pause: 500  # wait 500ms after keypress
+
+# Press 'd' to view details
+- type: keypress
+  pane: cli
+  key: "d"
+  pause: 2000
+
+# Press ESC to go back
+- type: keypress
+  pane: cli
+  key: "ESC"
+```
+
+**Parameters:**
+- `pane` (required): Pane ID to send keypress to
+- `key` (required): Key to press
+- `pause` (optional): Milliseconds to wait after keypress (default: 0)
+
+**Supported keys:**
+- **Arrow keys:** `Up`, `Down`, `Left`, `Right`
+- **Special keys:** `Enter`, `ESC`, `Space`, `Tab`
+- **Character keys:** `a-z`, `A-Z`, `0-9`, and symbols (e.g., `d`, `r`, `q`)
+
+**How it works:**
+- Maps special key names to tmux key names (e.g., `ESC` → `Escape`)
+- Sends keypress using `tmux send-keys`
+- Waits for specified pause duration after keypress
+- Character keys pass through as-is
+
+**Example use case:**
+```yaml
+# Automate navigation in Hookdeck CLI interactive mode
+- type: keypress
+  pane: cli
+  key: "Down"
+  pause: 500
+
+- type: keypress
+  pane: cli
+  key: "Down"
+  pause: 500
+
+- type: keypress
+  pane: cli
+  key: "d"  # View details
+  pause: 2000
+
+- type: keypress
+  pane: cli
+  key: "ESC"  # Go back
+  pause: 500
+```
+
 
 ### Speaker Notes vs Prompt
 

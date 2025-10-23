@@ -1,7 +1,7 @@
 /**
  * Action types that can be performed during a presentation step
  */
-export type ActionType = 'command' | 'signal' | 'pause' | 'prompt' | 'focus';
+export type ActionType = 'command' | 'signal' | 'pause' | 'prompt' | 'focus' | 'capture' | 'keypress';
 
 /**
  * Action to be performed during a step
@@ -15,6 +15,16 @@ export interface Action {
   message?: string;
   prompt?: string;
   wait?: boolean;
+  // Command action properties
+  captureOutput?: boolean;  // Start pipe-pane before executing command
+  typeSpeed?: number;
+  // Capture action properties
+  pattern?: string;
+  variable?: string;
+  timeout?: number;
+  // Keypress action properties
+  key?: string;
+  pause?: number;
 }
 
 /**

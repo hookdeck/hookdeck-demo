@@ -1,0 +1,7 @@
+profile = 'default'
+
+[default]
+api_key = '40b1tnnggvv3evk41gf47xelb9lnc4egzail3lfisv0yeym9sv'
+guest_url = 'https://api.hookdeck.com/signin/guest?token=0a9dif5tfjplwbfq1wo81sca10tp3e7gmp6bscn1ddj4tcx5zn'
+project_id = 'tm_IT2U42fj5bEo'
+project_mode = 'console'

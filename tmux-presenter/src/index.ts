@@ -78,7 +78,13 @@ export class TmuxPresenter {
     // Spawn terminal if configured (attaches to existing session)
     if (this.presentation.layout.terminal?.spawn && this.tmuxController) {
       this.ui.showMessage('Opening presentation terminal window...');
-      this.tmuxController.spawnTerminalWithTmux(this.workDir);
+      const terminalConfig = this.presentation.layout.terminal;
+      const fontSize = terminalConfig.fontSize || 11; // Default to 11pt if not specified
+      const width = terminalConfig.width || 1200; // Default width
+      const height = terminalConfig.height || 600; // Default height
+      const maximize = terminalConfig.maximize || false; // Default to not maximized
+      
+      this.tmuxController.spawnTerminalWithTmux(this.workDir, fontSize, width, height, maximize);
       await this.sleep(2000);
     }
 

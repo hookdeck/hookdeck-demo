@@ -108,6 +108,106 @@ export class PaneManager {
   }
 
   /**
+   * Capture content from a specific pane
+   */
+  captureContent(paneId: string): string {
+    const pane = this.getPaneOrThrow(paneId);
+    return this.tmux.capturePane(pane.getTarget(this.sessionName));
+  }
+
+  /**
+   * Get the current width of a specific pane
+   */
+  getPaneWidth(paneId: string): number {
+    const pane = this.getPaneOrThrow(paneId);
+    return this.tmux.getPaneWidth(pane.getTarget(this.sessionName));
+  }
+
+  /**
+   * Get the window width (total terminal width)
+   */
+  getWindowWidth(paneId: string): number {
+    const pane = this.getPaneOrThrow(paneId);
+    return this.tmux.getWindowWidth(pane.getTarget(this.sessionName));
+  }
+
+  /**
+   * Resize a specific pane to a given width
+   */
+  resizePaneWidth(paneId: string, width: number): void {
+    const pane = this.getPaneOrThrow(paneId);
+    this.tmux.resizePaneWidth(pane.getTarget(this.sessionName), width);
+  }
+
+  /**
+   * Maximize a pane to take up the full window
+   */
+  maximizePane(paneId: string): void {
+    const pane = this.getPaneOrThrow(paneId);
+    this.tmux.maximizePane(pane.getTarget(this.sessionName));
+  }
+
+  /**
+   * Get the current layout of the window
+   */
+  getCurrentLayout(): string {
+    const windowTarget = `${this.sessionName}:0`;
+    return this.tmux.getCurrentLayout(windowTarget);
+  }
+
+  /**
+   * Restore a specific layout to the window
+   */
+  restoreLayout(layout: string): void {
+    const windowTarget = `${this.sessionName}:0`;
+    this.tmux.restoreLayout(windowTarget, layout);
+  }
+
+  /**
+   * Refresh a specific pane (trigger TUI re-render)
+   */
+  refreshPane(paneId: string): void {
+    const pane = this.getPaneOrThrow(paneId);
+    this.tmux.refreshPane(pane.getTarget(this.sessionName));
+  }
+
+  /**
+   * Get the session name
+   */
+  getSessionName(): string {
+    return this.sessionName;
+  }
+
+  /**
+   * Set the terminal font size (macOS specific)
+   */
+  setTerminalFontSize(fontSize: number): void {
+    this.tmux.setTerminalFontSize(fontSize);
+  }
+
+  /**
+   * Resize the terminal window (macOS specific)
+   */
+  resizeTerminalWindow(width: number, height: number): void {
+    this.tmux.resizeTerminalWindow(width, height);
+  }
+
+  /**
+   * Get the current terminal window size (macOS specific)
+   */
+  getTerminalWindowSize(): { width: number; height: number } {
+    return this.tmux.getTerminalWindowSize();
+  }
+
+  /**
+   * Send a keypress to a specific pane
+   */
+  sendKeypress(paneId: string, key: string): void {
+    const pane = this.getPaneOrThrow(paneId);
+    this.tmux.sendKeypress(pane.getTarget(this.sessionName), key);
+  }
+
+  /**
    * Get a pane by ID or throw error
    */
   private getPaneOrThrow(paneId: string): Pane {

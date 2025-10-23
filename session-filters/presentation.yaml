@@ -28,8 +28,8 @@ layout:
   terminal:
     spawn: true
     title: "Hookdeck Demo - Presentation View"
-    width: 1200
-    height: 600
+    maximize: true  # Maximize window (overrides width/height)
+    fontSize: 18  # Font size in points (macOS Terminal.app only)
   controller:
     title: "Hookdeck Demo - Presenter View"
   panes:
