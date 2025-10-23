@@ -190,7 +190,7 @@ layout:
 - `fontSize`: Font size in points (default: 11, macOS Terminal.app only)
 - `maximize`: Maximize the terminal window (default: false, macOS only, overrides width/height)
 
-**Note:** The `maximize` option uses macOS accessibility features to set the terminal to full screen mode. When enabled, `width` and `height` settings are ignored.
+**Note:** The `maximize` option uses macOS accessibility features to maximize the terminal window to fill available screen space (excluding menu bar and dock). When enabled, `width` and `height` settings are ignored.
 
 **Layout behavior:**
 - Panes are arranged horizontally from left to right
