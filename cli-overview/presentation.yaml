@@ -41,12 +41,7 @@ layout:
       title: "WEBHOOK SENDER"
       position: 0
       width: 25%
-      initialCommand: |
-        if [ -f .hookdeck-guest-config.toml ]; then
-          rm -f .hookdeck-guest-config.toml
-        fi
-        hookdeck logout 2>/dev/null
-        clear
+      initialCommand: "clear"
     - id: cli
       title: "HOOKDECK CLI"
       position: 1
@@ -113,6 +108,14 @@ steps:
       
       Note: After creating a new source, we wait a few seconds for it to propagate through Hookdeck's system.
     actions:
+      - type: command
+        pane: cli
+        command: "hookdeck logout"
+        wait: false
+      - type: command
+        pane: cli
+        command: "clear" 
+        wait: false
       - type: pause
         duration: 1000
       - type: command
@@ -127,11 +130,12 @@ steps:
       - type: keypress
         pane: cli
         key: "y"
-      - type: pause
-        duration: 2000
+      - type: prompt
+        message: "About to confirm source creation" 
       - type: keypress
         pane: cli
         key: "Enter"
+        prompt: "Confirming new source creation"
       - type: pause
         duration: 2000
       - type: capture
@@ -142,6 +146,7 @@ steps:
         skipResize: true
       - type: pause
         duration: 2000
+        wait: true
 
   # Scene 4: Send Shopify Events
   - id: scene4_send_events
