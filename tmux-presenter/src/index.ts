@@ -19,6 +19,7 @@ export class TmuxPresenter {
   private env: Record<string, string> = {};
   private workDir: string = process.cwd();
   private currentStepIndex: number = 0;
+  private terminalSpawned: boolean = false;
 
   /**
    * Load a presentation from a YAML configuration file
@@ -85,6 +86,11 @@ export class TmuxPresenter {
       const maximize = terminalConfig.maximize || false; // Default to not maximized
       
       this.tmuxController.spawnTerminalWithTmux(this.workDir, fontSize, width, height, maximize);
+      this.terminalSpawned = true;
+      
+      // Set up cleanup handler for Ctrl+C and normal exit
+      this.setupCleanupHandlers();
+      
       await this.sleep(2000);
     }
 
@@ -96,6 +102,39 @@ export class TmuxPresenter {
 
     // Show completion
     this.ui.showCompletion(this.presentation.layout.sessionName);
+    
+    // Notify about terminal window closure
+    if (this.terminalSpawned) {
+      await this.ui.waitForUser('Press ENTER to close the presentation terminal window...');
+    }
+    
+    // Clean up spawned terminal on normal completion
+    this.cleanup();
+  }
+
+  /**
+   * Set up handlers to clean up spawned terminal on exit
+   */
+  private setupCleanupHandlers(): void {
+    // Handle Ctrl+C (SIGINT)
+    process.on('SIGINT', () => {
+      console.log('\n\nPresentation interrupted. Cleaning up...');
+      this.cleanup();
+      process.exit(0);
+    });
+
+    // Handle termination (SIGTERM)
+    process.on('SIGTERM', () => {
+      this.cleanup();
+      process.exit(0);
+    });
+
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (error) => {
+      console.error('Uncaught exception:', error);
+      this.cleanup();
+      process.exit(1);
+    });
   }
 
   /**
@@ -146,6 +185,16 @@ export class TmuxPresenter {
    * Clean up resources
    */
   cleanup(): void {
+    // Close spawned terminal window if one was created
+    if (this.terminalSpawned && this.tmuxController) {
+      try {
+        this.tmuxController.closeSpawnedTerminal();
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+    }
+    
+    // Clean up pane manager resources
     if (this.paneManager) {
       this.paneManager.cleanup();
     }

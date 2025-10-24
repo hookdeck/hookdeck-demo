@@ -59,27 +59,35 @@ export class PaneManager {
       `select-layout -t '${this.sessionName}:0' even-horizontal`
     );
 
-    // Initialize each pane
+    // Create pane objects and set titles FIRST
     for (const [index, paneConfig] of config.panes.entries()) {
       const pane = new Pane(paneConfig.id, index, paneConfig.title);
       this.panes.set(paneConfig.id, pane);
 
       // Set pane title
       this.tmux.setPaneTitle(pane.getTarget(this.sessionName), paneConfig.title);
-
-      // Navigate to working directory
-      this.executeCommand(paneConfig.id, `cd '${workDir}'`);
-
-      // Run initial command if specified
-      if (paneConfig.initialCommand) {
-        this.executeCommand(paneConfig.id, paneConfig.initialCommand);
-      }
     }
 
-    // Focus the default pane
+    // Focus the default pane BEFORE running any commands
     const defaultPane = config.panes.find((p) => p.defaultFocus);
     if (defaultPane) {
       this.focusPane(defaultPane.id);
+    }
+
+    // Now run initialization commands with focus already set
+    // Note: Panes inherit working directory from session creation, no cd needed
+    for (const [index, paneConfig] of config.panes.entries()) {
+      if (paneConfig.initialCommand) {
+        // If initial command is "clear", use Ctrl-L instead to avoid % character
+        if (paneConfig.initialCommand === 'clear') {
+          this.tmux.sendSignal(this.panes.get(paneConfig.id)!.getTarget(this.sessionName), 'C-l');
+        } else {
+          this.executeCommand(paneConfig.id, paneConfig.initialCommand);
+        }
+      } else {
+        // Default to Ctrl-L (clear screen) instead of clear command
+        this.tmux.sendSignal(this.panes.get(paneConfig.id)!.getTarget(this.sessionName), 'C-l');
+      }
     }
   }
 
@@ -97,6 +105,14 @@ export class PaneManager {
   sendSignal(paneId: string, signal: string): void {
     const pane = this.getPaneOrThrow(paneId);
     this.tmux.sendSignal(pane.getTarget(this.sessionName), signal);
+  }
+
+  /**
+   * Clear the content of a specific pane
+   */
+  clearPane(paneId: string): void {
+    const pane = this.getPaneOrThrow(paneId);
+    this.tmux.clearPane(pane.getTarget(this.sessionName));
   }
 
   /**
@@ -206,7 +222,6 @@ export class PaneManager {
     const pane = this.getPaneOrThrow(paneId);
     this.tmux.sendKeypress(pane.getTarget(this.sessionName), key);
   }
-
   /**
    * Get a pane by ID or throw error
    */

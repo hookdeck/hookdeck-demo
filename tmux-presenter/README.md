@@ -354,12 +354,19 @@ Change which pane has focus in the tmux session.
 Capture text from pane output using regex and store it as an environment variable for use in subsequent commands.
 
 ```yaml
-# Capture URL from CLI output
+# Capture URL from CLI output (with resize)
 - type: capture
   pane: cli
   pattern: "https://hkdk\\.events/[a-z0-9]+"
   variable: HOOKDECK_URL
   timeout: 5000  # optional, default: 5000ms
+
+# Capture without resizing (when terminal is already large enough)
+- type: capture
+  pane: cli
+  pattern: "https://hkdk\\.events/[a-z0-9]+"
+  variable: HOOKDECK_URL
+  skipResize: true  # skip window resize workaround
 ```
 
 **Parameters:**
@@ -367,6 +374,7 @@ Capture text from pane output using regex and store it as an environment variabl
 - `pattern` (required): Regex pattern to match
 - `variable` (required): Variable name to store captured value
 - `timeout` (optional): Max time to wait for pattern in milliseconds (default: 5000)
+- `skipResize` (optional): Skip window resize workaround (default: false)
 
 **How it works:**
 - Reads pane content using `tmux capture-pane`
@@ -378,19 +386,28 @@ Capture text from pane output using regex and store it as an environment variabl
 
 **⚠️ IMPORTANT - TUI Width Workaround (macOS only):**
 
-For TUI applications that truncate output based on terminal width (like Hookdeck CLI), the capture action uses a temporary window resize workaround:
+For TUI applications that truncate output based on terminal width (like Hookdeck CLI), the capture action can use a temporary window resize workaround (unless `skipResize: true`):
 
 1. Saves the original terminal window size
 2. Temporarily resizes the window to 5000px wide to maximize columns
 3. Waits for the TUI to detect the resize and re-render with full content
 4. Captures the content using tmux capture-pane
 5. Immediately restores the original window size
+6. **Prompts the presenter to verify the window position before continuing**
 
-**Note for presenters:** You may see a brief "flash" where the terminal window expands very wide during capture (~1 second). This is expected behavior and necessary to capture truncated URLs or long text that doesn't fit in the normal terminal width. The window returns to normal size immediately after capture.
+**When to use `skipResize: true`:**
+- Your terminal window is already large enough to display the full content
+- You want to avoid the window resize flash
+- You know the text you're capturing fits within the current terminal width
+
+**Note for presenters:**
+- When resize is used, you may see a brief "flash" where the terminal window expands very wide during capture (~1 second). This is expected behavior and necessary to capture truncated URLs or long text.
+- **After the window is restored, you will be prompted to verify the window is correctly positioned before continuing.** This is because the resize may not restore the window to its exact original position. Press ENTER once you've verified or adjusted the window position.
+- If `skipResize: true` is set, no window resizing occurs and no verification prompt is shown.
 
 **Example use case:**
 ```yaml
-# Capture URL from Hookdeck CLI listen output
+# Capture URL from Hookdeck CLI listen output (with resize and verification)
 - type: capture
   pane: cli
   pattern: "https://hkdk\\.events/[a-z0-9]+"
@@ -402,6 +419,8 @@ For TUI applications that truncate output based on terminal width (like Hookdeck
   pane: sender
   command: "curl ${HOOKDECK_URL}/webhook"
 ```
+
+
 
 #### `keypress` - Send keypresses for TUI navigation
 

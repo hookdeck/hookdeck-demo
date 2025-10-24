@@ -24,6 +24,8 @@ environment:
       errorMessage: "Hookdeck CLI is not installed. Install via: npm install -g @hookdeck/cli"
     - command: "which node"
       errorMessage: "Node.js is not installed. Please install it first."
+    - command: "which hookdeck"
+      errorMessage: "Hookdeck CLI is not installed. Install via: npm install -g @hookdeck/cli"
 
 layout:
   sessionName: hookdeck-cli-overview
@@ -39,7 +41,12 @@ layout:
       title: "WEBHOOK SENDER"
       position: 0
       width: 25%
-      initialCommand: "clear"
+      initialCommand: |
+        if [ -f .hookdeck-guest-config.toml ]; then
+          rm -f .hookdeck-guest-config.toml
+        fi
+        hookdeck logout 2>/dev/null
+        clear
     - id: cli
       title: "HOOKDECK CLI"
       position: 1
@@ -58,7 +65,7 @@ steps:
     title: "Scene 1 - Title Screen"
     duration: "5s"
     speakerNotes: |
-      # Scene 1: Title Screen (5s)
+      # Scene 1: Title Screen
       
       Welcome to Hookdeck CLI. This demonstration shows how to receive webhooks locally 
       in guest mode - no signup required.
@@ -87,7 +94,7 @@ steps:
         pane: server
         command: "npm run server"
         wait: true
-        prompt: "Starting local webhook server on port 3000..."
+        prompt: "Starting local webhook server on port 3000"
         typeSpeed: 50
       - type: pause
         duration: 2000
@@ -106,11 +113,14 @@ steps:
       
       Note: After creating a new source, we wait a few seconds for it to propagate through Hookdeck's system.
     actions:
+      - type: pause
+        duration: 1000
       - type: command
         pane: cli
-        command: "hookdeck listen 3000 shopify --path /webhooks/shopify --config .hookdeck-guest-config.toml"
+        command: |
+          hookdeck listen 3000 shopify --path /webhooks/shopify 
         wait: true
-        prompt: "Starting Hookdeck CLI in guest mode..."
+        prompt: "Starting Hookdeck CLI in guest mode"
         typeSpeed: 30
       - type: pause
         duration: 1000
@@ -118,7 +128,7 @@ steps:
         pane: cli
         key: "y"
       - type: pause
-        duration: 500
+        duration: 2000
       - type: keypress
         pane: cli
         key: "Enter"
@@ -129,8 +139,9 @@ steps:
         pattern: "https://hkdk\\.events/[a-z0-9]+"
         variable: HOOKDECK_URL
         timeout: 5000
+        skipResize: true
       - type: pause
-        duration: 8000
+        duration: 2000
 
   # Scene 4: Send Shopify Events
   - id: scene4_send_events
@@ -163,7 +174,7 @@ steps:
               "total_price": "29.99"
             }'
         wait: true
-        prompt: "Sending orders/create event..."
+        prompt: "Sending orders/create event"
         typeSpeed: 40
       - type: pause
         duration: 2000
@@ -179,7 +190,7 @@ steps:
               "variants": [{"id": 1, "price": "19.99"}]
             }'
         wait: true
-        prompt: "Sending products/update event..."
+        prompt: "Sending products/update event"
         typeSpeed: 40
       - type: pause
         duration: 2000
@@ -194,7 +205,7 @@ steps:
               "available": 42
             }'
         wait: true
-        prompt: "Sending inventory_levels/update event..."
+        prompt: "Sending inventory_levels/update event"
         typeSpeed: 40
       - type: pause
         duration: 2000
@@ -213,6 +224,16 @@ steps:
     actions:
       - type: focus
         pane: cli
+      - type: keypress
+        pane: cli
+        key: "Down"
+      - type: pause
+        duration: 500
+      - type: keypress
+        pane: cli
+        key: "Down"
+      - type: pause
+        duration: 500
       - type: keypress
         pane: cli
         key: "Down"
@@ -293,9 +314,23 @@ steps:
     actions:
       - type: keypress
         pane: cli
+        key: "Up"
+      - type: pause
+        duration: 500
+      - type: keypress
+        pane: cli
         key: "r"
       - type: pause
         duration: 3000
+      - type: keypress
+        pane: cli
+        key: "Up"
+      - type: pause
+        duration: 500
+      - type: keypress
+        pane: cli
+        key: "r"
+
 
   # Scene 8: Apply Session Filter
   - id: scene8_apply_filter
@@ -319,36 +354,32 @@ steps:
         pane: cli
         signal: "C-c"
         wait: true
-        prompt: "Stopping current Hookdeck session..."
+        prompt: "Stopping current Hookdeck session"
       - type: pause
         duration: 1000
       - type: command
         pane: cli
-        command: "hookdeck listen 3000 shopify --path /webhooks/shopify --filter-headers '{\"X-Shopify-Topic\": \"orders/create\"}' --config .hookdeck-guest-config.toml"
+        command: |
+          hookdeck listen 3000 shopify --path /webhooks/shopify \
+            --filter-headers '{"x-shopify-topic": "orders/create"}'
         wait: true
-        prompt: "Restarting with session filter for orders/create events only..."
+        prompt: "Restarting with session filter for orders/create events only"
         typeSpeed: 30
       - type: capture
         pane: cli
         pattern: "https://hkdk\\.events/[a-z0-9]+"
         variable: HOOKDECK_URL
+        skipResize: true
         timeout: 5000
       - type: pause
         duration: 3000
       - type: command
         pane: sender
-        command: |
-          curl -X POST ${HOOKDECK_URL} \
-            -H "Content-Type: application/json" \
-            -H "X-Shopify-Topic: orders/create" \
-            -d '{
-              "id": 1001,
-              "email": "alice@example.com",
-              "total_price": "29.99"
-            }'
+        command: "clear"
         wait: true
-        prompt: "Resending orders/create event..."
-        typeSpeed: 40
+        prompt: "Clearing sender pane"
+      - type: pause
+        duration: 1000
       - type: pause
         duration: 2000
       - type: command
@@ -363,7 +394,23 @@ steps:
               "variants": [{"id": 1, "price": "19.99"}]
             }'
         wait: true
-        prompt: "Resending products/update event (should be filtered out)..."
+        prompt: "Resending products/update event (should be filtered out)"
+        typeSpeed: 40
+      - type: pause
+        duration: 2000
+      - type: command
+        pane: sender
+        command: |
+          curl -X POST ${HOOKDECK_URL} \
+            -H "Content-Type: application/json" \
+            -H "X-Shopify-Topic: orders/create" \
+            -d '{
+              "id": 1001,
+              "email": "alice@example.com",
+              "total_price": "29.99"
+            }'
+        wait: true
+        prompt: "Resending orders/create event"
         typeSpeed: 40
       - type: pause
         duration: 2000
@@ -378,7 +425,7 @@ steps:
               "available": 42
             }'
         wait: true
-        prompt: "Resending inventory_levels/update event (should be filtered out)..."
+        prompt: "Resending inventory_levels/update event (should be filtered out)"
         typeSpeed: 40
       - type: pause
         duration: 2000
@@ -413,7 +460,14 @@ steps:
         pane: server
         signal: "C-c"
         wait: true
-        prompt: "Stopping local server to simulate downtime..."
+        prompt: "Stopping local server to simulate downtime"
+      - type: pause
+        duration: 1000
+      - type: command
+        pane: sender
+        command: "clear"
+        wait: true
+        prompt: "Clearing sender pane"
       - type: pause
         duration: 1000
       - type: command
@@ -428,7 +482,7 @@ steps:
               "status": "active"
             }'
         wait: true
-        prompt: "Sending event while server is down..."
+        prompt: "Sending event while server is down"
         typeSpeed: 40
       - type: pause
         duration: 2000
@@ -440,7 +494,7 @@ steps:
         pane: server
         command: "npm run server"
         wait: true
-        prompt: "Restarting local server..."
+        prompt: "Restarting local server"
         typeSpeed: 50
       - type: pause
         duration: 2000

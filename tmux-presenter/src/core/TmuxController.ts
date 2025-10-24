@@ -63,16 +63,29 @@ export class TmuxController {
   }
 
   /**
-   * Send keys to a specific pane
+   * Send keys to a specific pane using literal mode
+   * This prevents the shell from interpreting backslash continuations during paste
    */
   sendKeys(target: string, keys: string, execute: boolean = true): void {
-    const command = execute ? `${keys}\n` : keys;
-    // Escape the command for shell - replace " with \"
-    const escapedCommand = command.replace(/"/g, '\\"').replace(/\$/g, '\\$');
-    // Use set-buffer and paste-buffer for better handling of special characters
-    execSync(`tmux set-buffer -- "${escapedCommand}"; tmux paste-buffer -t "${target}"`, {
+    // Strip trailing newlines to prevent empty command execution
+    // (which causes directory listings in zsh)
+    const trimmedKeys = keys.replace(/\n+$/, '');
+    
+    // Escape single quotes in the command for shell
+    const escapedKeys = trimmedKeys.replace(/'/g, "'\\''");
+    
+    // Use send-keys with -l (literal) flag to send the text exactly as-is
+    // This prevents shell interpretation during typing
+    execSync(`tmux send-keys -l -t "${target}" '${escapedKeys}'`, {
       stdio: 'inherit',
     });
+    
+    // If execute is true, send Enter to execute the command
+    if (execute) {
+      execSync(`tmux send-keys -t "${target}" Enter`, {
+        stdio: 'inherit',
+      });
+    }
   }
 
   /**
@@ -80,6 +93,14 @@ export class TmuxController {
    */
   sendSignal(target: string, signal: string): void {
     this.exec(`send-keys -t "${target}" ${signal}`);
+  }
+
+  /**
+   * Clear the content of a pane
+   */
+  clearPane(target: string): void {
+    // Send clear command
+    this.exec(`send-keys -t "${target}" C-l`);
   }
 
   /**
@@ -246,6 +267,33 @@ export class TmuxController {
     }
     
     execSync(`osascript -e '${script}'`, { stdio: 'inherit' });
+  }
+
+  /**
+   * Close the terminal window that's running the tmux session (macOS specific)
+   * This finds and closes ONLY the window with our specific tmux session
+   */
+  closeSpawnedTerminal(): void {
+    const script = `
+      tell application "Terminal"
+        set targetSession to "${this.sessionName}"
+        repeat with w in windows
+          try
+            set windowContents to contents of w as text
+            if windowContents contains targetSession then
+              close w
+              exit repeat
+            end if
+          end try
+        end repeat
+      end tell
+    `;
+    try {
+      execSync(`osascript -e '${script}'`, { stdio: 'ignore' });
+    } catch (error) {
+      // Ignore errors if window is already closed or not found
+      console.warn('Warning: Unable to close spawned terminal window.');
+    }
   }
 
   /**
