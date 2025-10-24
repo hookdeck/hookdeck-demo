@@ -117,9 +117,11 @@ export class TmuxPresenter {
    */
   private setupCleanupHandlers(): void {
     // Handle Ctrl+C (SIGINT)
-    process.on('SIGINT', () => {
+    process.on('SIGINT', async () => {
       console.log('\n\nPresentation interrupted. Cleaning up...');
       this.cleanup();
+      // Give AppleScript time to close the window before exiting
+      await this.sleep(500);
       process.exit(0);
     });
 
