@@ -24,8 +24,6 @@ environment:
       errorMessage: "Hookdeck CLI is not installed. Install via: npm install -g @hookdeck/cli"
     - command: "which node"
       errorMessage: "Node.js is not installed. Please install it first."
-    - command: "which hookdeck"
-      errorMessage: "Hookdeck CLI is not installed. Install via: npm install -g @hookdeck/cli"
 
 layout:
   sessionName: hookdeck-cli-overview
