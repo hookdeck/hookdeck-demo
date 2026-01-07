@@ -4,7 +4,8 @@ import * as path from 'path';
 
 // Validate required environment variables
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY;
-const CALLBACK_URL = process.env.CALLBACK_URL;
+const TTS_CALLBACK_URL = process.env.TTS_CALLBACK_URL;
+const STT_CALLBACK_URL = process.env.STT_CALLBACK_URL;
 
 if (!DEEPGRAM_API_KEY) {
   console.error('❌ ERROR: DEEPGRAM_API_KEY is not set in .env file');
@@ -13,12 +14,15 @@ if (!DEEPGRAM_API_KEY) {
   process.exit(1);
 }
 
-if (!CALLBACK_URL) {
-  console.error('❌ ERROR: CALLBACK_URL is not set in .env file');
-  console.error('Please run Hookdeck and configure the callback URL:');
-  console.error('  1. Run: hookdeck listen 4000 --path /webhooks/deepgram');
-  console.error('  2. Copy the Source URL from the output');
-  console.error('  3. Add it to your .env file as CALLBACK_URL');
+if (!TTS_CALLBACK_URL) {
+  console.error('❌ ERROR: TTS_CALLBACK_URL is not set in .env file');
+  console.error('Please set up Hookdeck connections as described in README.md');
+  process.exit(1);
+}
+
+if (!STT_CALLBACK_URL) {
+  console.error('❌ ERROR: STT_CALLBACK_URL is not set in .env file');
+  console.error('Please set up Hookdeck connections as described in README.md');
   process.exit(1);
 }
 
@@ -34,29 +38,15 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // Import demo routers
 import ttsRouter from './demos/tts/router';
+import sttRouter from './demos/stt/router';
 
 // Mount demo routes
 app.use('/tts', ttsRouter);
+app.use('/stt', sttRouter);
 
-// Mount webhook endpoint (at root level for Hookdeck)
-// ⚠️ NOTE: This endpoint will NEVER be called because Hookdeck rejects binary data
-app.post('/webhooks/deepgram', express.raw({ type: 'audio/mpeg', limit: '50mb' }), (req, res) => {
-  // This endpoint is defined but will never receive callbacks because:
-  // 1. Deepgram sends binary audio data (audio/mpeg) to the callback URL
-  // 2. Hookdeck only supports JSON webhook payloads
-  // 3. Hookdeck will reject the request from Deepgram
-  const requestId = req.query.requestId as string;
-  console.log(`📥 [Webhook] Received Deepgram callback for ${requestId}`);
-  console.log(`   ⚠️  WARNING: This should never be called - Hookdeck rejects binary data`);
-  console.log(`   Hookdeck rejects binary audio/mpeg content from Deepgram`);
-  
-  // Just acknowledge receipt (though this should never happen)
-  res.status(200).json({
-    received: true,
-    requestId,
-    limitation: 'Hookdeck rejects binary audio/mpeg content'
-  });
-});
+// Note: Webhook endpoints are handled directly by the demo routers
+// - STT webhook: /stt/webhook (working - receives JSON)
+// - TTS webhook: /tts/webhook (not working - Hookdeck rejects binary data)
 
 // Landing page (served from public/index.html)
 app.get('/', (req: Request, res: Response) => {

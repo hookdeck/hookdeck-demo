@@ -65,7 +65,7 @@ router.post('/api/generate', async (req: Request, res: Response) => {
   }
 
   const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY;
-  const CALLBACK_URL = process.env.CALLBACK_URL;
+  const CALLBACK_URL = process.env.TTS_CALLBACK_URL;
   const requestId = uuidv4();
   const newRequest: TTSRequest = {
     id: requestId,

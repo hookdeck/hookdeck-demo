@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hookdeck Deepgram STT Demo</title>
+  <link rel="stylesheet" href="/stt/styles.css">
+</head>
+<body>
+  <h1>🎧 Hookdeck Deepgram STT Demo</h1>
+  
+  <div class="info-banner">
+    <h3>✅ This Demo Works with Hookdeck!</h3>
+    <p>
+      Speech-to-Text callbacks return <strong>JSON transcriptions</strong> 
+      which are fully compatible with Hookdeck's webhook management.
+    </p>
+    <p>
+      <a href="/">← Back to Demos</a>
+    </p>
+  </div>
+  
+  <div class="container">
+    <h2>Record Audio</h2>
+    
+    <div class="recorder-section">
+      <div class="recorder-controls">
+        <button id="startBtn" class="btn-primary">🎤 Start Recording</button>
+        <button id="stopBtn" class="btn-danger" disabled>⏹️ Stop Recording</button>
+        <button id="clearBtn" class="btn-secondary" disabled>🗑️ Clear</button>
+      </div>
+      
+      <div id="recorderStatus" class="status-message">
+        Ready to record. Click "Start Recording" to begin.
+      </div>
+      
+      <div id="audioPreview" class="audio-preview" style="display: none;">
+        <h3>Recorded Audio:</h3>
+        <audio id="audioPlayer" controls></audio>
+        <div class="upload-section">
+          <label for="model">Deepgram Model:</label>
+          <select id="model" name="model">
+            <option value="nova-2">Nova 2 (Recommended)</option>
+            <option value="nova-2-general">Nova 2 General</option>
+            <option value="nova-2-meeting">Nova 2 Meeting</option>
+            <option value="nova-2-phonecall">Nova 2 Phone Call</option>
+            <option value="nova-2-finance">Nova 2 Finance</option>
+            <option value="nova-2-medical">Nova 2 Medical</option>
+            <option value="enhanced">Enhanced</option>
+            <option value="base">Base</option>
+          </select>
+          <button id="uploadBtn" class="btn-primary">📤 Upload & Transcribe</button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="message"></div>
+  </div>
+
+  <div class="container requests">
+    <h2>Transcription Requests</h2>
+    <div class="requests-controls">
+      <button id="refreshBtn" class="btn-secondary">🔄 Refresh</button>
+      <label>
+        <input type="checkbox" id="autoRefresh" checked>
+        Auto-refresh every 3s
+      </label>
+    </div>
+    <div id="requestsList"></div>
+  </div>
+
+  <script src="/stt/app.js"></script>
+</body>
+</html>
