@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hookdeck Deepgram TTS Demo</title>
+  <link rel="stylesheet" href="/tts/styles.css">
+</head>
+<body>
+  <h1>🎙️ Hookdeck Deepgram TTS Demo</h1>
+  
+  <div class="warning-banner">
+    <h3>⚠️ This Demo is Currently Non-Functional</h3>
+    <p>
+      <strong>Reason:</strong> Deepgram TTS callbacks send binary audio data (audio/mpeg),
+      but Hookdeck only supports JSON webhook payloads. The webhook will be received
+      but the audio data cannot be forwarded.
+    </p>
+    <p>
+      <strong>Purpose:</strong> This demo documents the limitation and shows what would
+      be needed for callback-based TTS if Hookdeck supported binary content types in the future.
+    </p>
+    <p>
+      <a href="/">← Back to Demos</a>
+    </p>
+  </div>
+  
+  <div class="container">
+    <h2>Generate Speech</h2>
+    <form id="ttsForm">
+      <div class="form-group">
+        <label for="text">Text to speak:</label>
+        <textarea id="text" name="text" required placeholder="Enter text to convert to speech...">Hello, welcome to Deepgram!</textarea>
+      </div>
+      <div class="form-group">
+        <label for="model">Voice Model:</label>
+        <select id="model" name="model">
+          <option value="aura-asteria-en">Aura Asteria (EN)</option>
+          <option value="aura-luna-en">Aura Luna (EN)</option>
+          <option value="aura-stella-en">Aura Stella (EN)</option>
+          <option value="aura-athena-en">Aura Athena (EN)</option>
+          <option value="aura-hera-en">Aura Hera (EN)</option>
+          <option value="aura-orion-en">Aura Orion (EN)</option>
+          <option value="aura-arcas-en">Aura Arcas (EN)</option>
+          <option value="aura-perseus-en">Aura Perseus (EN)</option>
+        </select>
+      </div>
+      <button type="submit">Generate Speech</button>
+    </form>
+    <div id="message"></div>
+  </div>
+
+  <div class="container requests">
+    <h2>Recent Requests</h2>
+    <div id="requestsList"></div>
+  </div>
+
+  <script src="/tts/app.js"></script>
+</body>
+</html>
