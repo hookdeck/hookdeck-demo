@@ -71,3 +71,31 @@ This demo is designed for testing different scenarios with sample events, allowi
 ### Usage
 
 Use the NPM scripts defined in the `package.json` to trigger events and test the transformation and reordering capabilities. See the [README](transformation-reording/README.md) in the `transformation-reording/` directory for detailed setup instructions and configuration options.
+
+## Deepgram AI Demos
+
+The `ai/deepgram/` directory contains interactive demos showcasing Deepgram's AI APIs integrated with Hookdeck's webhook management platform.
+
+### Speech-to-Text (STT) Demo
+
+A fully functional browser-based demo that demonstrates asynchronous webhook processing with Hookdeck:
+
+-   **Browser audio recording**: Capture audio directly in your browser using the MediaRecorder API
+-   **File upload**: Support for WebM, WAV, MP3, and OGG formats (up to 50MB)
+-   **Webhook-based processing**: Audio is sent to Deepgram's STT API with a callback URL pointing to Hookdeck
+-   **Real-time transcriptions**: Hookdeck forwards JSON transcription results to your local server
+-   **Auto-refresh UI**: Automatically updates when transcriptions are complete
+-   **Multiple models**: Choose from Nova-2, Enhanced, Base, and specialized models
+
+This demo highlights Hookdeck's ability to manage JSON webhook callbacks, providing observability, retry logic, and local development support for asynchronous AI processing workflows.
+
+### Key Features
+
+-   **Idempotent setup**: Uses `hookdeck connection upsert` for reproducible configuration
+-   **Dual demo support**: Separate Hookdeck sources for STT (working) and TTS (documentation)
+-   **Request tracking**: JSON-based persistence for transcription history
+-   **TypeScript + Express**: Modern stack with type safety and modular router architecture
+
+### Usage
+
+See the [README](ai/deepgram/README.md) in the `ai/deepgram/` directory for detailed setup instructions, Hookdeck configuration, and usage examples.
