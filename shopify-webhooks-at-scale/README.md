@@ -172,12 +172,6 @@ This demo harness supports three key demonstrations:
    npm run send:simulated -- --burst 300
    ```
 
-   Or:
-
-   ```bash
-   ts-node scripts/02-send-simulated-webhooks.ts --burst 300
-   ```
-
 4. Show backpressure in the Hookdeck dashboard:
 
    - Navigate to the `shopify-orders-prod-conn` connection
