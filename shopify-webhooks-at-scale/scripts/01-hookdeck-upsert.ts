@@ -1,6 +1,9 @@
 import * as dotenv from "dotenv";
 import { resolve } from "path";
 import { readFileSync, writeFileSync, existsSync } from "fs";
+import { execSync } from "child_process";
+import { createInterface } from "readline";
+import * as TOML from "@iarna/toml";
 
 // Load environment variables from .env file in project root
 dotenv.config({ path: resolve(process.cwd(), ".env") });
@@ -30,15 +33,105 @@ if (!process.env.DESTINATION_URL) {
   process.exit(1);
 }
 
-if (!process.env.SHOPIFY_CLIENT_SECRET) {
-  console.error("Error: SHOPIFY_CLIENT_SECRET environment variable is not set");
+// Validate that shopify.app.toml exists
+const shopifyTomlPath = resolve(process.cwd(), "shopify", "shopify.app.toml");
+if (!existsSync(shopifyTomlPath)) {
+  console.error("Error: shopify/shopify.app.toml not found");
   console.error(
-    "Please set it in your .env file or as an environment variable"
-  );
-  console.error(
-    "Example: SHOPIFY_CLIENT_SECRET=your_shopify_webhook_secret_here"
+    "Please run 'shopify app dev' first to create the app and configuration file"
   );
   process.exit(1);
+}
+
+// Get Shopify API secret from shopify app env show
+let shopifyApiSecret: string;
+const shopifyDir = resolve(process.cwd(), "shopify");
+
+// Verify shopify directory exists
+if (!existsSync(shopifyDir)) {
+  console.error(`Error: shopify directory not found: ${shopifyDir}`);
+  console.error("Please make sure you're running this from the project root");
+  process.exit(1);
+}
+
+try {
+  // Run the command using --path flag to specify the app directory
+  const envOutput = execSync(`shopify app env show --path "${shopifyDir}"`, {
+    encoding: "utf-8",
+  });
+
+  // Parse: SHOPIFY_API_SECRET=value
+  const apiSecretMatch = envOutput.match(/SHOPIFY_API_SECRET=([^\s]+)/);
+  if (!apiSecretMatch || !apiSecretMatch[1]) {
+    throw new Error(
+      "Could not extract SHOPIFY_API_SECRET from shopify app env show"
+    );
+  }
+  shopifyApiSecret = apiSecretMatch[1];
+} catch (error) {
+  console.error("Error: Failed to run 'shopify app env show'");
+  console.error(`Running from directory: ${shopifyDir}`);
+  console.error(
+    "Make sure you have run 'shopify app dev' in the shopify directory and are authenticated with Shopify CLI"
+  );
+  if (error instanceof Error) {
+    console.error(error.message);
+  }
+  process.exit(1);
+}
+
+/**
+ * Update or add an environment variable in the .env file
+ */
+function updateEnvFile(envPath: string, key: string, value: string): void {
+  let envContent = "";
+  let keyExists = false;
+  const lines: string[] = [];
+
+  // Read existing .env file if it exists
+  if (existsSync(envPath)) {
+    envContent = readFileSync(envPath, "utf-8");
+    const envLines = envContent.split("\n");
+
+    // Process each line
+    for (const line of envLines) {
+      const trimmed = line.trim();
+
+      // Check if this line contains the key we're updating
+      if (trimmed.startsWith(`${key}=`)) {
+        // Update the existing line
+        lines.push(`${key}=${value}`);
+        keyExists = true;
+      } else if (trimmed.match(/^#\s*.*HOOKDECK_SOURCE_URL/i) && !keyExists) {
+        // If there's a comment about HOOKDECK_SOURCE_URL, add the key after it
+        lines.push(line);
+        lines.push(`${key}=${value}`);
+        keyExists = true;
+      } else {
+        // Keep the line as-is
+        lines.push(line);
+      }
+    }
+  }
+
+  // If key doesn't exist, add it at the end
+  if (!keyExists) {
+    if (lines.length > 0 && lines[lines.length - 1] !== "") {
+      lines.push(""); // Add blank line before new entry
+    }
+    lines.push(`${key}=${value}`);
+  }
+
+  // Write back to file
+  try {
+    writeFileSync(envPath, lines.join("\n"), "utf-8");
+    console.log(`Updated .env file: ${key}=${value}`);
+    console.log("");
+  } catch (error) {
+    console.warn(`Warning: Failed to update .env file: ${error}`);
+    console.warn(`Please manually add ${key}=${value} to your .env file`);
+    console.log("");
+  }
 }
 
 // Types for API responses
@@ -60,6 +153,21 @@ interface HookdeckConnection {
   name: string;
   source: HookdeckSource;
   destination: HookdeckDestination;
+}
+
+// Prompt for confirmation
+function confirm(question: string): Promise<boolean> {
+  const rl = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
+    });
+  });
 }
 
 // API client function
@@ -125,7 +233,7 @@ async function main() {
       type: "SHOPIFY",
       config: {
         auth: {
-          webhook_secret_key: process.env.SHOPIFY_CLIENT_SECRET,
+          webhook_secret_key: shopifyApiSecret,
         },
       },
     },
@@ -176,6 +284,10 @@ async function main() {
   console.log("==========================================");
   console.log("");
 
+  // Update .env file with HOOKDECK_SOURCE_URL
+  const envPath = resolve(process.cwd(), ".env");
+  updateEnvFile(envPath, "HOOKDECK_SOURCE_URL", sourceUrl);
+
   // Step 2: Create/update development connection (CLI destination) reusing the same source
   console.log(
     `Creating/updating development connection: ${DEV_CONNECTION_NAME}`
@@ -220,80 +332,83 @@ async function main() {
   console.log("==========================================");
   console.log("");
 
-  // Step 3: Generate shopify.app.toml from template
-  const templatePath = resolve(
-    process.cwd(),
-    "shopify",
-    "shopify.app.toml.template"
-  );
-  const outputPath = resolve(process.cwd(), "shopify", "shopify.app.toml");
-
-  if (!existsSync(templatePath)) {
-    console.log(`Warning: Template file not found: ${templatePath}`);
-    console.log("Skipping TOML file generation");
-    return;
-  }
-
-  // Check if output file already exists and extract existing client_id
-  let existingClientId: string | null = null;
-  if (existsSync(outputPath)) {
-    const existingContent = readFileSync(outputPath, "utf-8");
-    const clientIdMatch = existingContent.match(/^client_id = "([^"]+)"/m);
-    if (clientIdMatch && clientIdMatch[1] !== "YOUR_CLIENT_ID") {
-      existingClientId = clientIdMatch[1];
-      console.log(`Found existing client_id in ${outputPath}`);
-      console.log("This will regenerate the file but preserve your client_id.");
-      console.log("");
-    } else {
-      console.log(`Warning: The file ${outputPath} already exists.`);
-      console.log(
-        "This will regenerate it from the template with the new Hookdeck source URL."
-      );
-      console.log("");
-    }
-  }
-
-  // Read template and replace placeholder
-  let templateContent = readFileSync(templatePath, "utf-8");
-  templateContent = templateContent.replace(/{{HOOKDECK_URL}}/g, sourceUrl);
-
-  // Restore existing client_id if it was found
-  if (existingClientId) {
-    templateContent = templateContent.replace(
-      /^client_id = ".*"/m,
-      `client_id = "${existingClientId}"`
-    );
-  }
-
-  // Write the generated file
-  writeFileSync(outputPath, templateContent, "utf-8");
-
-  console.log(`Generated shopify.app.toml file:`);
-  console.log(`  ${outputPath}`);
+  // Step 3: Update shopify.app.toml with webhook subscription
+  console.log(`Preparing to update ${shopifyTomlPath}...`);
   console.log("");
 
-  // Check if client_id is still the placeholder
-  if (templateContent.includes('client_id = "YOUR_CLIENT_ID"')) {
-    console.log("⚠️  WARNING: The client_id is still set to 'YOUR_CLIENT_ID'");
-    console.log(
-      "   You need to update it with your actual Shopify app client ID."
-    );
-    console.log("");
-    console.log("   To get your client ID:");
-    console.log(
-      "   1. Run 'cd shopify && shopify app dev --reset' (recommended - creates app automatically)"
-    );
-    console.log(
-      "   2. Or create an app at https://partners.shopify.com and copy the Client ID"
-    );
-    console.log(`   3. Then edit ${outputPath} and replace YOUR_CLIENT_ID`);
-    console.log("");
+  // Read and parse the TOML file
+  const fileContent = readFileSync(shopifyTomlPath, "utf-8");
+  const config = TOML.parse(fileContent) as any;
+
+  // Ensure webhooks section exists
+  if (!config.webhooks) {
+    config.webhooks = { api_version: "2026-04", subscriptions: [] };
+  }
+  if (!config.webhooks.subscriptions) {
+    config.webhooks.subscriptions = [];
   }
 
-  console.log(
-    "The file has been created from the template with the Hookdeck source URL."
+  // Check for existing order webhook subscriptions
+  const webhookSubs = config.webhooks.subscriptions;
+  const existingOrderSubs = webhookSubs.filter((sub: any) =>
+    sub.topics?.some((topic: string) => topic.startsWith("orders/"))
   );
-  console.log("You can now use this file in your Shopify app configuration.");
+
+  // If exists, prompt for confirmation
+  if (existingOrderSubs.length > 0) {
+    console.log("Found existing order webhook subscriptions:");
+    existingOrderSubs.forEach((sub: any) => {
+      console.log(`  - Topics: ${sub.topics?.join(", ")}`);
+      console.log(`    URI: ${sub.uri}`);
+    });
+    console.log("");
+
+    const confirmed = await confirm(
+      "Do you want to replace these with the Hookdeck source URL? (y/N): "
+    );
+    if (!confirmed) {
+      console.log("Update cancelled. Exiting.");
+      process.exit(0);
+    }
+
+    // Remove existing order subscriptions
+    config.webhooks.subscriptions = webhookSubs.filter(
+      (sub: any) =>
+        !sub.topics?.some((topic: string) => topic.startsWith("orders/"))
+    );
+  }
+
+  // Add new order webhook subscription
+  const orderWebhookSub = {
+    topics: [
+      "orders/cancelled",
+      "orders/create",
+      "orders/delete",
+      "orders/edited",
+      "orders/fulfilled",
+      "orders/paid",
+      "orders/partially_fulfilled",
+      "orders/updated",
+    ],
+    uri: sourceUrl,
+  };
+
+  config.webhooks.subscriptions.push(orderWebhookSub);
+
+  // Write back to file
+  try {
+    const updatedContent = TOML.stringify(config);
+    writeFileSync(shopifyTomlPath, updatedContent, "utf-8");
+    console.log(`${shopifyTomlPath} updated successfully`);
+    console.log("");
+    console.log("Updated webhook subscription:");
+    console.log(`  URI: ${sourceUrl}`);
+    console.log("");
+  } catch (error) {
+    console.error(`Failed to update ${shopifyTomlPath}`);
+    console.error(error);
+    process.exit(1);
+  }
 }
 
 // Run the main function
