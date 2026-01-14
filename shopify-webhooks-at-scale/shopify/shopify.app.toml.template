@@ -1,26 +1,52 @@
-# Shopify App Configuration
-# This file is compatible with Shopify CLI and the React Router app template
-# Replace {{HOOKDECK_URL}} with the Hookdeck source URL from the CLI upsert script
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-# App identification
-name = "shopify-webhooks-demo"
 client_id = "YOUR_CLIENT_ID"
-application_url = "https://your-app-url.com"
-
-# App configuration
+name = "webhooks-demo"
+application_url = "https://example.com"
 embedded = true
 
-# Required access scopes for the app
+[build]
+automatically_update_urls_on_dev = true
+include_config_on_deploy = true
+
+[webhooks]
+api_version = "2026-04"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  # Subscribe to all order events for comprehensive demo scenarios
+  topics = [
+    "orders/cancelled",
+    "orders/create",
+    "orders/delete",
+    "orders/edited",
+    "orders/fulfilled",
+    "orders/paid",
+    "orders/partially_fulfilled",
+    "orders/updated"
+  ]
+  uri = "{{HOOKDECK_URL}}"
+  # Include fields needed for demos (including customer.phone for failure scenarios)
+  include_fields = [
+    "id",
+    "updated_at",
+    "admin_graphql_api_id",
+    "customer.phone",
+    "customer.id",
+    "customer.email",
+    "billing_address.phone"
+  ]
+
 [access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "read_orders,write_orders"
 
-# App-specific webhook subscriptions
-# These webhooks are automatically registered when you deploy the app
-# The URI will be replaced with the Hookdeck source URL from the upsert script
-[[webhooks]]
-subscriptions = ["orders/updated"]
-uri = "{{HOOKDECK_URL}}"
-
-# Minimize payload size by including only necessary fields
-# This reduces webhook payload size and processing overhead
-include_fields = ["id", "updated_at", "admin_graphql_api_id"]
+[auth]
+redirect_urls = [ "https://example.com/api/auth" ]

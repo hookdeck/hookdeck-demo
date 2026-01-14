@@ -4,6 +4,7 @@
   "description": "Demo harness for Shopify webhooks at scale demonstrations",
   "main": "index.js",
   "scripts": {
+    "upsert": "ts-node scripts/01-hookdeck-upsert.ts",
     "send:simulated": "ts-node scripts/02-send-simulated-webhooks.ts",
     "destination": "ts-node scripts/03-demo-destination.ts"
   },
