@@ -11,6 +11,9 @@ dist/
 # Hookdeck CLI output
 hookdeck-connection-output.json
 
+# Generated Shopify app configuration (contains actual Hookdeck URL)
+shopify/shopify.app.toml
+
 # IDE
 .vscode/
 .idea/
@@ -20,3 +23,5 @@ hookdeck-connection-output.json
 # OS
 .DS_Store
 Thumbs.db
+
+.hookdeck/
