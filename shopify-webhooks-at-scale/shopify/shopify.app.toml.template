@@ -1,0 +1,20 @@
+# Shopify App Configuration
+# Replace {{HOOKDECK_URL}} with the Hookdeck source URL from the CLI upsert script
+
+name = "shopify-webhooks-demo"
+client_id = "YOUR_CLIENT_ID"
+application_url = "https://your-app-url.com"
+embedded = true
+
+[access_scopes]
+# Add your required scopes here
+scopes = "read_orders,write_orders"
+
+# Webhook subscription for orders/updated events
+# The URI will be replaced with the Hookdeck source URL
+[[webhooks]]
+subscriptions = ["orders/updated"]
+uri = "{{HOOKDECK_URL}}"
+
+# Minimize payload size by including only necessary fields
+include_fields = ["id", "updated_at", "admin_graphql_api_id"]

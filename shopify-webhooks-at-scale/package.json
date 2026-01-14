@@ -1,0 +1,23 @@
+{
+  "name": "shopify-webhooks-at-scale",
+  "version": "1.0.0",
+  "description": "Demo harness for Shopify webhooks at scale demonstrations",
+  "main": "index.js",
+  "scripts": {
+    "send:simulated": "ts-node scripts/02-send-simulated-webhooks.ts",
+    "destination": "ts-node scripts/03-demo-destination.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0"
+  }
+}
