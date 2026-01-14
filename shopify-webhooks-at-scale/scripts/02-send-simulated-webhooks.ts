@@ -1,15 +1,26 @@
 import * as dotenv from "dotenv";
 import { createHmac } from "crypto";
 import { randomUUID } from "crypto";
+import { resolve } from "path";
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from .env file in project root
+// Try to resolve relative to script location, fallback to process.cwd()
+let envPath: string;
+try {
+  // @ts-ignore - __dirname is available in CommonJS
+  envPath = resolve(__dirname, "..", ".env");
+} catch {
+  // Fallback to current working directory if __dirname not available
+  envPath = resolve(process.cwd(), ".env");
+}
+dotenv.config({ path: envPath });
 
 // Parse command line arguments
 const args = process.argv.slice(2);
 let burstSize = parseInt(process.env.BURST_SIZE || "300");
 let duplicateEvery = parseInt(process.env.DUPLICATE_EVERY || "0");
 let topic = process.env.TOPIC || "orders/updated";
+let includeCustomerPhone = process.env.INCLUDE_CUSTOMER_PHONE !== "false"; // Default to true
 
 // Parse CLI flags
 for (let i = 0; i < args.length; i++) {
@@ -22,6 +33,10 @@ for (let i = 0; i < args.length; i++) {
   } else if (args[i] === "--topic" && args[i + 1]) {
     topic = args[i + 1];
     i++;
+  } else if (args[i] === "--no-customer-phone") {
+    includeCustomerPhone = false;
+  } else if (args[i] === "--with-customer-phone") {
+    includeCustomerPhone = true;
   } else if (args[i] === "--help" || args[i] === "-h") {
     console.log(`
 Usage: ts-node 02-send-simulated-webhooks.ts [options]
@@ -30,6 +45,9 @@ Options:
   --burst <number>              Number of webhooks to send (default: 300, or BURST_SIZE env var)
   --duplicate-every <number>    Reuse same event ID every N requests (default: 0 = unique IDs, or DUPLICATE_EVERY env var)
   --topic <string>              Webhook topic (default: orders/updated, or TOPIC env var)
+                                Supported topics: orders/create, orders/updated, orders/paid, orders/cancelled, etc.
+  --no-customer-phone           Exclude customer.phone from payload (for failure scenarios)
+  --with-customer-phone          Include customer.phone in payload (default)
   --help, -h                    Show this help message
 
 Environment Variables:
@@ -38,6 +56,7 @@ Environment Variables:
   BURST_SIZE                     Default burst size if --burst not provided
   DUPLICATE_EVERY                Default duplicate frequency if --duplicate-every not provided
   TOPIC                          Default topic if --topic not provided
+  INCLUDE_CUSTOMER_PHONE         Set to "false" to exclude customer.phone (default: true)
 `);
     process.exit(0);
   }
@@ -47,18 +66,34 @@ Environment Variables:
 const sourceUrl = process.env.HOOKDECK_SOURCE_URL;
 if (!sourceUrl) {
   console.error("Error: HOOKDECK_SOURCE_URL environment variable is not set");
+  console.error("Please set it in your .env file or as an environment variable");
   process.exit(1);
 }
 
 const shopifySecret = process.env.SHOPIFY_CLIENT_SECRET;
 
-// Minimal order payload matching include_fields structure
-function createOrderPayload(id: number): any {
-  return {
+// Order payload matching include_fields structure
+// Can include/exclude customer.phone for failure scenario testing
+function createOrderPayload(id: number, includePhone: boolean = true): any {
+  const payload: any = {
     id: id,
     updated_at: new Date().toISOString(),
     admin_graphql_api_id: `gid://shopify/Order/${id}`,
+    customer: {
+      id: 115310627314723954,
+      email: "john@example.com",
+    },
+    billing_address: {
+      phone: includePhone ? "123-123-1234" : null,
+    },
   };
+
+  // Include customer.phone only if requested
+  if (includePhone) {
+    payload.customer.phone = "123-123-1234";
+  }
+
+  return payload;
 }
 
 // Generate HMAC signature if secret is provided
@@ -93,7 +128,8 @@ async function sendWebhook(
   }
 
   try {
-    const response = await fetch(sourceUrl, {
+    // sourceUrl is guaranteed to be defined due to validation above
+    const response = await fetch(sourceUrl!, {
       method: "POST",
       headers,
       body: payloadString,
@@ -124,6 +160,7 @@ async function main() {
   console.log(
     `Duplicate mode: ${duplicateEvery > 0 ? `Every ${duplicateEvery} requests` : "Unique event IDs"}`
   );
+  console.log(`Customer phone: ${includeCustomerPhone ? "included" : "excluded"}`);
   console.log("==========================================");
   console.log("");
 
@@ -151,7 +188,7 @@ async function main() {
 
   // Send webhooks with progress updates
   for (let i = 0; i < burstSize; i++) {
-    const payload = createOrderPayload(1000000 + i);
+    const payload = createOrderPayload(1000000 + i, includeCustomerPhone);
     const result = await sendWebhook(eventIds[i], topic, payload);
 
     if (result.success) {
