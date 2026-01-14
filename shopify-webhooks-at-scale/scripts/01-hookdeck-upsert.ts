@@ -204,7 +204,8 @@ async function main() {
 
   // Build rules array for filtering and deduplication
   // Filter: All events where x-shopify-topic starts with "orders/"
-  // Deduplicate: Based on X-Shopify-Event-Id header with 60 second window
+  // Deduplicate: Based on x-shopify-event-ed header with 60 second window
+  // Note: headers are case-sensitive!
   const rules = [
     {
       type: "filter",
@@ -216,7 +217,7 @@ async function main() {
     },
     {
       type: "deduplicate",
-      include_fields: ["headers.X-Shopify-Event-Id"],
+      include_fields: ["headers.x-shopify-event-id"],
       window: 60000, // 60 seconds in milliseconds
     },
   ];
@@ -242,8 +243,8 @@ async function main() {
       type: "HTTP",
       config: {
         url: process.env.DESTINATION_URL,
-        rate_limit: 5,
-        rate_limit_period: "second",
+        rate_limit: 1,
+        rate_limit_period: "minute",
       },
     },
     rules: rules,
