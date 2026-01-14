@@ -68,51 +68,36 @@ echo "$SOURCE_URL"
 echo "=========================================="
 echo ""
 
-# Get the script directory to find the template file
+# Get the script directory to find the shopify.app.toml file
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEMPLATE_FILE="$SCRIPT_DIR/../shopify/shopify.app.toml.template"
-OUTPUT_TOML_FILE="$SCRIPT_DIR/../shopify/shopify.app.toml"
+TOML_FILE="$SCRIPT_DIR/../shopify/shopify.app.toml"
 
-# Check if template file exists
-if [ ! -f "$TEMPLATE_FILE" ]; then
-  echo "Warning: Template file not found: $TEMPLATE_FILE"
-  echo "Skipping TOML file generation"
+# Check if shopify.app.toml file exists
+if [ ! -f "$TOML_FILE" ]; then
+  echo "Warning: shopify.app.toml file not found: $TOML_FILE"
+  echo "Please ensure you have initialized the Shopify app in the shopify/ directory"
+  echo "Skipping TOML file update"
 else
-  # Check if output file already exists
-  if [ -f "$OUTPUT_TOML_FILE" ]; then
-    echo "Warning: The file $OUTPUT_TOML_FILE already exists."
-    echo "This will update the source URL value in the existing file."
-    echo ""
-    read -p "Do you want to proceed? (y/N): " -n 1 -r
-    echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-      echo "Skipping TOML file update."
-      exit 0
-    fi
+  # Check if the file contains the placeholder
+  if grep -q "{{HOOKDECK_URL}}" "$TOML_FILE"; then
+    echo "Updating shopify.app.toml with Hookdeck source URL..."
     
-    # Update the existing file by replacing the URI value
-    # Match lines like: uri = "https://..." or uri = "{{HOOKDECK_URL}}"
+    # Update the existing file by replacing the URI value for orders/updated webhook
+    # Only replace the URI line that contains {{HOOKDECK_URL}} placeholder
     if [[ "$OSTYPE" == "darwin"* ]]; then
-      # macOS uses BSD sed
-      sed -i '' "s|uri = \".*\"|uri = \"$SOURCE_URL\"|g" "$OUTPUT_TOML_FILE"
+      # macOS uses BSD sed - replace only lines containing the placeholder
+      sed -i '' "s|uri = \"{{HOOKDECK_URL}}\"|uri = \"$SOURCE_URL\"|g" "$TOML_FILE"
     else
       # Linux uses GNU sed
-      sed -i "s|uri = \".*\"|uri = \"$SOURCE_URL\"|g" "$OUTPUT_TOML_FILE"
+      sed -i "s|uri = \"{{HOOKDECK_URL}}\"|uri = \"$SOURCE_URL\"|g" "$TOML_FILE"
     fi
     
     echo "Updated shopify.app.toml file:"
-    echo "  $OUTPUT_TOML_FILE"
+    echo "  $TOML_FILE"
     echo ""
-    echo "The source URL has been updated in the existing file."
+    echo "The Hookdeck source URL has been updated in the webhook configuration."
   else
-    # Copy template and replace placeholder with source URL
-    sed "s|{{HOOKDECK_URL}}|$SOURCE_URL|g" "$TEMPLATE_FILE" > "$OUTPUT_TOML_FILE"
-    
-    echo "Generated shopify.app.toml file:"
-    echo "  $OUTPUT_TOML_FILE"
-    echo ""
-    echo "The file has been created with the Hookdeck source URL."
+    echo "Note: shopify.app.toml does not contain {{HOOKDECK_URL}} placeholder"
+    echo "The file may have already been updated, or the webhook is not configured."
   fi
-  
-  echo "You can now use this file in your Shopify app configuration."
 fi

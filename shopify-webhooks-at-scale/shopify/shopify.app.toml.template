@@ -1,20 +1,26 @@
 # Shopify App Configuration
+# This file is compatible with Shopify CLI and the React Router app template
 # Replace {{HOOKDECK_URL}} with the Hookdeck source URL from the CLI upsert script
 
+# App identification
 name = "shopify-webhooks-demo"
 client_id = "YOUR_CLIENT_ID"
 application_url = "https://your-app-url.com"
+
+# App configuration
 embedded = true
 
+# Required access scopes for the app
 [access_scopes]
-# Add your required scopes here
 scopes = "read_orders,write_orders"
 
-# Webhook subscription for orders/updated events
-# The URI will be replaced with the Hookdeck source URL
+# App-specific webhook subscriptions
+# These webhooks are automatically registered when you deploy the app
+# The URI will be replaced with the Hookdeck source URL from the upsert script
 [[webhooks]]
 subscriptions = ["orders/updated"]
 uri = "{{HOOKDECK_URL}}"
 
 # Minimize payload size by including only necessary fields
+# This reduces webhook payload size and processing overhead
 include_fields = ["id", "updated_at", "admin_graphql_api_id"]

@@ -42,12 +42,11 @@ This demo harness supports three key demonstrations:
    This script will:
    - Create or update a Hookdeck connection
    - Extract the source URL from the JSON output
-   - Print a ready-to-paste snippet for your `shopify.app.toml`
+   - Automatically update `shopify/shopify.app.toml` with the Hookdeck source URL
 
-4. **Configure Shopify webhook**:
-   - Copy the source URL from the upsert script output
-   - Replace `{{HOOKDECK_URL}}` in `shopify/shopify.app.toml.template` with the source URL
-   - Or use the ready-to-paste snippet provided by the script
+4. **Verify Shopify webhook configuration**:
+   - The `shopify/shopify.app.toml` file has been automatically updated with the Hookdeck source URL
+   - The webhook subscription for `orders/updated` is configured to send to Hookdeck
 
 ## Demo Checklists
 
@@ -68,9 +67,9 @@ This demo harness supports three key demonstrations:
    - Destination: `shopify-orders-destination`
    - Rules: Topic filter (`orders/updated`) and deduplication (`X-Shopify-Event-Id`)
 
-3. Copy the source URL from the script output
-
-4. Update `shopify/shopify.app.toml.template` with the source URL (or use the provided snippet)
+3. Verify the `shopify/shopify.app.toml` file has been updated
+   - The script automatically replaces `{{HOOKDECK_URL}}` with the actual Hookdeck source URL
+   - The webhook subscription for `orders/updated` should now point to your Hookdeck source
 
 **Observable Behavior**:
 - Connection appears in Hookdeck dashboard
