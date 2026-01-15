@@ -303,7 +303,7 @@ async function main() {
       name: DEV_DESTINATION_NAME,
       type: "CLI",
       config: {
-        path: "/webhooks/shopify",
+        path: "/",
       },
     },
     rules: rules, // Same rules as production
@@ -329,7 +329,7 @@ async function main() {
   console.log(`Development: ${DEV_CONNECTION_NAME} (CLI destination)`);
   console.log("");
   console.log("To use the CLI connection for local debugging, run:");
-  console.log(`  hookdeck listen 3000 ${SOURCE_NAME}`);
+  console.log(`  hookdeck listen 4000 ${SOURCE_NAME}`);
   console.log("==========================================");
   console.log("");
 
@@ -380,6 +380,8 @@ async function main() {
   }
 
   // Add new order webhook subscription
+  // Append the webhook path to the Hookdeck source URL
+  const webhookPath = "/webhooks/shopify/orders";
   const orderWebhookSub = {
     topics: [
       "orders/cancelled",
@@ -391,7 +393,7 @@ async function main() {
       "orders/partially_fulfilled",
       "orders/updated",
     ],
-    uri: sourceUrl,
+    uri: `${sourceUrl}${webhookPath}`,
   };
 
   config.webhooks.subscriptions.push(orderWebhookSub);
@@ -403,7 +405,8 @@ async function main() {
     console.log(`${shopifyTomlPath} updated successfully`);
     console.log("");
     console.log("Updated webhook subscription:");
-    console.log(`  URI: ${sourceUrl}`);
+    console.log(`  URI: ${orderWebhookSub.uri}`);
+    console.log(`  (Hookdeck source: ${sourceUrl} + path: ${webhookPath})`);
     console.log("");
   } catch (error) {
     console.error(`Failed to update ${shopifyTomlPath}`);

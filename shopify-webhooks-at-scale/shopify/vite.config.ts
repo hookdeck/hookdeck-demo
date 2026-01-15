@@ -41,17 +41,15 @@ export default defineConfig({
     cors: {
       preflightContinue: true,
     },
-    port: Number(process.env.PORT || 3000),
+    port: Number(process.env.PORT || 4000),
+    strictPort: true, // Fail if port is already in use instead of picking a random port
     hmr: hmrConfig,
     fs: {
       // See https://vitejs.dev/config/server-options.html#server-fs-allow for more information
       allow: ["app", "node_modules"],
     },
   },
-  plugins: [
-    reactRouter(),
-    tsconfigPaths(),
-  ],
+  plugins: [reactRouter(), tsconfigPaths()],
   build: {
     assetsInlineLimit: 0,
   },

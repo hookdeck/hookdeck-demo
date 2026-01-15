@@ -136,7 +136,7 @@ echo "Production: $PROD_CONNECTION_NAME (HTTP destination)"
 echo "Development: $DEV_CONNECTION_NAME (CLI destination)"
 echo ""
 echo "To use the CLI connection for local debugging, run:"
-echo "  hookdeck listen 3000 $SOURCE_NAME"
+echo "  hookdeck listen 4000 $SOURCE_NAME"
 echo "=========================================="
 echo ""
 

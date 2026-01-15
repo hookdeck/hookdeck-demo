@@ -51,7 +51,7 @@ Options:
   --help, -h                    Show this help message
 
 Environment Variables:
-  HOOKDECK_SOURCE_URL           Required: Hookdeck source URL to send webhooks to
+  HOOKDECK_SOURCE_URL           Required: Hookdeck source URL (base URL, path will be appended)
   SHOPIFY_CLIENT_SECRET         Optional: Secret for HMAC signature generation
   BURST_SIZE                     Default burst size if --burst not provided
   DUPLICATE_EVERY                Default duplicate frequency if --duplicate-every not provided
@@ -63,12 +63,21 @@ Environment Variables:
 }
 
 // Validate required environment variables
-const sourceUrl = process.env.HOOKDECK_SOURCE_URL;
-if (!sourceUrl) {
+const baseSourceUrl = process.env.HOOKDECK_SOURCE_URL;
+if (!baseSourceUrl) {
   console.error("Error: HOOKDECK_SOURCE_URL environment variable is not set");
-  console.error("Please set it in your .env file or as an environment variable");
+  console.error(
+    "Please set it in your .env file or as an environment variable"
+  );
   process.exit(1);
 }
+
+// Append the webhook path to the Hookdeck source URL
+// This matches the path configured in shopify.app.toml
+const webhookPath = "/webhooks/shopify/orders";
+const sourceUrl = baseSourceUrl.endsWith("/")
+  ? `${baseSourceUrl.slice(0, -1)}${webhookPath}`
+  : `${baseSourceUrl}${webhookPath}`;
 
 const shopifySecret = process.env.SHOPIFY_CLIENT_SECRET;
 
@@ -154,13 +163,20 @@ async function main() {
   console.log("==========================================");
   console.log("Simulated Shopify Webhook Sender");
   console.log("==========================================");
-  console.log(`Source URL: ${sourceUrl}`);
+  console.log(`Base Source URL: ${baseSourceUrl}`);
+  console.log(`Full Webhook URL: ${sourceUrl}`);
   console.log(`Burst size: ${burstSize}`);
   console.log(`Topic: ${topic}`);
   console.log(
-    `Duplicate mode: ${duplicateEvery > 0 ? `Every ${duplicateEvery} requests` : "Unique event IDs"}`
+    `Duplicate mode: ${
+      duplicateEvery > 0
+        ? `Every ${duplicateEvery} requests`
+        : "Unique event IDs"
+    }`
   );
-  console.log(`Customer phone: ${includeCustomerPhone ? "included" : "excluded"}`);
+  console.log(
+    `Customer phone: ${includeCustomerPhone ? "included" : "excluded"}`
+  );
   console.log("==========================================");
   console.log("");
 
@@ -205,7 +221,9 @@ async function main() {
     if ((i + 1) % 50 === 0 || i === burstSize - 1) {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
       console.log(
-        `Progress: ${i + 1}/${burstSize} (${successCount} success, ${failureCount} failures) - ${elapsed}s`
+        `Progress: ${
+          i + 1
+        }/${burstSize} (${successCount} success, ${failureCount} failures) - ${elapsed}s`
       );
     }
   }

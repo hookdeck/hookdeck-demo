@@ -182,7 +182,7 @@ This demo harness supports three key demonstrations:
 
    ```bash
    hookdeck connection upsert shopify-orders-prod-conn \
-     --destination-rate-limit 50 \
+     --destination-rate-limit 5 \
      --destination-rate-limit-period second
    ```
 
@@ -206,16 +206,20 @@ This demo harness supports three key demonstrations:
 
 **Prerequisites**:
 
-- Production destination deployed (e.g., Vercel)
+- Production Shopify app deployed (e.g., Vercel, Railway)
 - Production connection (`shopify-orders-prod-conn`) configured with production URL
+- The production URL should point to your deployed Shopify app (webhooks are automatically routed)
 
 **Steps**:
 
-1. **Deploy production destination** (if not already deployed):
+1. **Deploy production Shopify app** (if not already deployed):
 
-   - Deploy `scripts/03-demo-destination.ts` to Vercel or similar
-   - Set `FAILURE_MODE=missing-phone` environment variable
-   - Update `DESTINATION_URL` in `.env` to point to production URL
+   - Deploy the Shopify app to your hosting platform (e.g., Vercel, Railway)
+   - The webhook handler in `shopify/app/routes/webhooks.shopify.orders.$.tsx` assumes `customer.phone` exists (will fail if missing)
+   - Update `DESTINATION_URL` in `.env` to point to your deployed Shopify app URL (e.g., `https://your-app.vercel.app`)
+   - The webhook endpoint will be automatically routed to `/webhooks/shopify/orders` by the Shopify app framework
+   - Note: The webhook handler at `shopify/app/routes/webhooks.shopify.orders.$.tsx` will handle all order webhook events
+   - The upsert script automatically appends `/webhooks/shopify/orders` to the Hookdeck source URL in `shopify.app.toml`
    - Run `npm run upsert` to update the production connection
 
 2. **Send events that trigger failures**:
@@ -223,12 +227,6 @@ This demo harness supports three key demonstrations:
    ```bash
    # Send events without customer.phone to trigger failures
    npm run send:simulated -- --burst 50 --no-customer-phone
-   ```
-
-   Or:
-
-   ```bash
-   ts-node scripts/02-send-simulated-webhooks.ts --burst 50 --no-customer-phone
    ```
 
 3. **Show failures in Hookdeck dashboard**:
@@ -240,15 +238,16 @@ This demo harness supports three key demonstrations:
 4. **Use CLI connection for local debugging**:
 
    ```bash
-   # Start local destination server in missing-phone mode
-   FAILURE_MODE=missing-phone npm run destination
+   # Start the Shopify app locally
+   cd shopify
+   shopify app dev
    ```
 
    In another terminal:
 
    ```bash
-   # Use the CLI connection to retry events locally
-   hookdeck listen 3000 shopify-orders
+   # Use the CLI connection to receive events locally
+   hookdeck listen 4000 shopify-orders
    ```
 
 5. **Replicate the problem locally**:
@@ -259,20 +258,25 @@ This demo harness supports three key demonstrations:
 
 6. **Fix the issue locally**:
 
-   - Update the local destination server to handle missing phone gracefully
-   - Test with events that include customer.phone
+   - Edit `shopify/app/routes/webhooks.shopify.orders.$.tsx` to check for phone number before calling `sendConfirmationText()`
+   - Add a conditional check: only send confirmation text if `customer.phone` exists
+   - Test with events that include customer.phone (should work)
+   - Test with events without customer.phone (should now handle gracefully)
    - Verify the fix works
 
 7. **Push fix to production**:
 
-   - Deploy the updated destination server
-   - Update production environment variables if needed
+   - Commit the code changes
+   - Deploy the updated Shopify app to production
 
 8. **Retry failed events on production connection**:
 
-   - In Hookdeck dashboard, select failed events
-   - Click "Retry Selected" or "Bulk Retry"
-   - Observe retry attempts succeeding
+   - In Hookdeck dashboard, select a single failed event
+   - Click "Retry" to test with one event
+   - Observe retry attempt succeeding
+   - Then select multiple failed events
+   - Click "Bulk Retry" to retry all failed events
+   - Observe all retry attempts succeeding
 
 9. **Verify all events are processed**:
    - Check that all previously failed events are now successful
@@ -366,41 +370,46 @@ ts-node scripts/02-send-simulated-webhooks.ts --burst 300 --topic orders/updated
 
 **Environment Variables**:
 
-- `HOOKDECK_SOURCE_URL`: Required - Hookdeck source URL
+- `HOOKDECK_SOURCE_URL`: Required - Hookdeck source URL (base URL, the script automatically appends `/webhooks/shopify/orders`)
 - `SHOPIFY_CLIENT_SECRET`: Optional - For HMAC signature generation
 - `BURST_SIZE`: Default burst size
 - `DUPLICATE_EVERY`: Default duplicate frequency
 - `TOPIC`: Default topic
 - `INCLUDE_CUSTOMER_PHONE`: Set to "false" to exclude customer.phone (default: true)
 
-### `03-demo-destination.ts`
+### Webhook Handler: `shopify/app/routes/webhooks.shopify.orders.$.tsx`
 
-Demo destination server that receives webhooks and supports payload-based failure detection.
+The order webhook handler in the Shopify app. For `orders/create` events, it calls `sendConfirmationText()` to send a confirmation text message to the customer. This function will throw an error if `customer.phone` is missing, causing a 500 response. This is intentional for the demo - you'll fix it during Demo 3.
+
+**Location**: `shopify/app/routes/webhooks.shopify.orders.$.tsx`
+
+**Webhook Path**: `/webhooks/shopify/orders` (appended to Hookdeck source URL in `shopify.app.toml`)
+
+**Behavior**:
+
+- For `orders/create` events: Calls `sendConfirmationText(customer.phone)` which throws if phone is missing
+- Returns 200 if processing succeeds
+- Returns 500 if `customer.phone` is missing or null (for `orders/create` events)
+- During Demo 3, you'll add a phone number check before calling `sendConfirmationText()`
 
 **Usage**:
 
-```bash
-# Using npm script
-npm run destination
+The webhook handler is automatically invoked when the Shopify app receives order webhooks. To test locally:
 
-# Direct execution
-ts-node scripts/03-demo-destination.ts
+```bash
+cd shopify
+shopify app dev
 ```
 
-**Failure Modes** (via `FAILURE_MODE` environment variable):
+Then use the CLI connection to forward webhooks to your local app:
 
-- `none` (default): Always return 200
-- `missing-phone`: Return 500 when `customer.phone` is missing or null
+```bash
+hookdeck listen 4000 shopify-orders
+```
 
-**Environment Variables**:
+**Webhook Endpoint**:
 
-- `PORT`: Server port (default: 3000)
-- `FAILURE_MODE`: Failure mode (default: `none`)
-
-**Endpoints**:
-
-- `POST /webhook`: Webhook delivery endpoint
-- `GET /health`: Health check endpoint
+- `POST /webhooks/shopify/orders`: Webhook delivery endpoint (handled by `shopify/app/routes/webhooks.shopify.orders.$.tsx`)
 
 ## Troubleshooting
 
@@ -424,7 +433,7 @@ Ensure your destination server is publicly accessible. Options:
 
 - Deploy to Vercel, Railway, or similar
 - Use `https://mock.hookdeck.com` for testing
-- Use ngrok for local testing: `ngrok http 3000`
+- Use ngrok for local testing: `ngrok http 4000`
 
 ### Connection upsert fails
 
@@ -443,8 +452,8 @@ Ensure your destination server is publicly accessible. Options:
 ### CLI connection not working
 
 - Verify the `shopify-orders-dev-conn` connection exists in Hookdeck dashboard
-- Ensure you're using the correct source name: `hookdeck listen 3000 shopify-orders`
-- Check that the local server is running on the correct port
+- Ensure you're using the correct source name: `hookdeck listen 4000 shopify-orders`
+- Check that the local server is running on port 4000 (configured in `shopify/shopify.web.toml`)
 
 ## License
 
