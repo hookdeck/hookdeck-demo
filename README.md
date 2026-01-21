@@ -8,6 +8,28 @@ The `stripe-fetch-before-process/` directory contains an Express.js application 
 
 See the [README](stripe-fetch-before-process/README.md) in the `stripe-fetch-before-process/` directory for more details.
 
+## Shopify Webhooks at Scale
+
+The `shopify-webhooks-at-scale/` directory contains a complete Shopify app demo that showcases Hookdeck's webhook management capabilities with Shopify's order webhooks. This demo covers three key scenarios: setup and configuration, backpressure handling, and logs/retry workflows.
+
+### Key Features
+
+- **Deterministic setup**: TypeScript script that uses the Hookdeck API to create connections and automatically configures Shopify webhook subscriptions
+- **Integrated webhook handling**: Webhook handlers built directly into the Shopify React Router app (no separate server needed)
+- **Realistic error scenarios**: Simulates real-world application failures (e.g., missing customer phone number) for demonstrating retry workflows
+- **Multi-vendor webhook path**: Uses `/webhooks/shopify/orders` to emphasize a multi-vendor webhook architecture
+- **Local development support**: Hookdeck CLI destination for local debugging and testing
+
+### Demo Scenarios
+
+1. **Setup & Configuration**: Automated connection creation, webhook subscription injection, and environment variable management
+2. **Backpressure**: Demonstrates rate limiting, topic filtering, and destination throughput control
+3. **Logs & Retry**: Shows how to debug failed webhooks locally, fix application code, and retry events in bulk
+
+### Usage
+
+See the [README](shopify-webhooks-at-scale/README.md) in the `shopify-webhooks-at-scale/` directory for detailed setup instructions, demo walkthroughs, and configuration options.
+
 ## `general/` Directory
 
 The `general/` directory contains a Next.js application designed to receive and verify webhooks.
