@@ -285,9 +285,10 @@ async function main() {
   console.log("==========================================");
   console.log("");
 
-  // Update .env file with HOOKDECK_SOURCE_URL
+  // Update .env file with HOOKDECK_SOURCE_URL and SHOPIFY_CLIENT_SECRET
   const envPath = resolve(process.cwd(), ".env");
   updateEnvFile(envPath, "HOOKDECK_SOURCE_URL", sourceUrl);
+  updateEnvFile(envPath, "SHOPIFY_CLIENT_SECRET", shopifyApiSecret);
 
   // Step 2: Create/update development connection (CLI destination) reusing the same source
   console.log(

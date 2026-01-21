@@ -40,6 +40,11 @@ This demo harness supports three key demonstrations:
    # Optional: Hookdeck source URL (automatically added/updated by upsert script)
    # The script will automatically add or update this after step 4
    HOOKDECK_SOURCE_URL=https://hkdk.events/your-source-id
+
+   # Optional: Shopify client secret (automatically added/updated by upsert script)
+   # The script will automatically add or update this after step 4
+   # This is used by the simulation script for HMAC signature generation
+   SHOPIFY_CLIENT_SECRET=your_shopify_client_secret
    ```
 
 3. **Set up your Shopify app**:
@@ -88,6 +93,7 @@ This demo harness supports three key demonstrations:
 - Both connections share the same source and filter rules
 - Extract the source URL from the API response
 - Automatically add or update `HOOKDECK_SOURCE_URL` in your `.env` file
+- Automatically add or update `SHOPIFY_CLIENT_SECRET` in your `.env` file (for simulation script HMAC signatures)
 - Inject order webhook subscriptions into `shopify/shopify.app.toml` with the Hookdeck source URL
 - Preserve existing webhook subscriptions (app/uninstalled, app/scopes_update)
 
@@ -333,7 +339,7 @@ ts-node scripts/01-hookdeck-upsert.ts
 **What it does**:
 
 1. Validates that `shopify/shopify.app.toml` exists
-2. Runs `shopify app env show --path` to get `SHOPIFY_API_SECRET` (automatically uses the shopify directory)
+2. Runs `shopify app env show --path` to get `SHOPIFY_API_SECRET` from the Shopify CLI (automatically uses the shopify directory)
 3. Creates/updates Hookdeck connections via API
 4. Injects order webhook subscriptions into `shopify.app.toml`
 5. Preserves existing webhook subscriptions (app/uninstalled, app/scopes_update)
@@ -370,12 +376,12 @@ ts-node scripts/02-send-simulated-webhooks.ts --burst 300 --topic orders/updated
 
 **Environment Variables**:
 
-- `HOOKDECK_SOURCE_URL`: Required - Hookdeck source URL (base URL, the script automatically appends `/webhooks/shopify/orders`)
-- `SHOPIFY_CLIENT_SECRET`: Optional - For HMAC signature generation
-- `BURST_SIZE`: Default burst size
-- `DUPLICATE_EVERY`: Default duplicate frequency
-- `TOPIC`: Default topic
-- `INCLUDE_CUSTOMER_PHONE`: Set to "false" to exclude customer.phone (default: true)
+- `HOOKDECK_SOURCE_URL`: Required - Hookdeck source URL (base URL, the script automatically appends `/webhooks/shopify/orders`). Automatically set by the upsert script.
+- `SHOPIFY_CLIENT_SECRET`: Required - Client secret for HMAC signature generation (should match what 'shopify app dev' uses). Automatically set by the upsert script.
+- `BURST_SIZE`: Optional - Default burst size
+- `DUPLICATE_EVERY`: Optional - Default duplicate frequency
+- `TOPIC`: Optional - Default topic
+- `INCLUDE_CUSTOMER_PHONE`: Optional - Set to "false" to exclude customer.phone (default: true)
 
 ### Webhook Handler: `shopify/app/routes/webhooks.shopify.orders.$.tsx`
 

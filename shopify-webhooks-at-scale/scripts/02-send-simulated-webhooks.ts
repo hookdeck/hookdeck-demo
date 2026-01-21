@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
-import { createHmac } from "crypto";
-import { randomUUID } from "crypto";
+import { createHmac, randomUUID } from "crypto";
+import { execSync } from "child_process";
+import { existsSync } from "fs";
 import { resolve } from "path";
 
 // Load environment variables from .env file in project root
@@ -52,7 +53,7 @@ Options:
 
 Environment Variables:
   HOOKDECK_SOURCE_URL           Required: Hookdeck source URL (base URL, path will be appended)
-  SHOPIFY_CLIENT_SECRET         Optional: Secret for HMAC signature generation
+  SHOPIFY_CLIENT_SECRET         Required: Client secret for HMAC signature generation (should match what 'shopify app dev' uses)
   BURST_SIZE                     Default burst size if --burst not provided
   DUPLICATE_EVERY                Default duplicate frequency if --duplicate-every not provided
   TOPIC                          Default topic if --topic not provided
@@ -79,7 +80,27 @@ const sourceUrl = baseSourceUrl.endsWith("/")
   ? `${baseSourceUrl.slice(0, -1)}${webhookPath}`
   : `${baseSourceUrl}${webhookPath}`;
 
-const shopifySecret = process.env.SHOPIFY_CLIENT_SECRET;
+// Get Shopify client secret from .env file - REQUIRED
+// This should match the secret that 'shopify app dev' auto-injects into the Shopify SDK
+// The Shopify SDK uses this secret to verify webhook HMAC signatures
+const shopifySecretEnv = process.env.SHOPIFY_CLIENT_SECRET;
+
+if (!shopifySecretEnv) {
+  console.error("Error: SHOPIFY_CLIENT_SECRET environment variable is not set");
+  console.error(
+    "Please set it in your .env file. This should match the client secret that 'shopify app dev' uses."
+  );
+  console.error(
+    "You can find it by running: shopify app env show --path ./shopify"
+  );
+  process.exit(1);
+}
+
+// TypeScript now knows this is definitely a string (process.exit above ensures it)
+const shopifySecret: string = shopifySecretEnv;
+
+console.log(`✓ Using SHOPIFY_CLIENT_SECRET (length: ${shopifySecret.length})`);
+console.log(`  (This should match the secret that 'shopify app dev' injects for signature verification)`);
 
 // Order payload matching include_fields structure
 // Can include/exclude customer.phone for failure scenario testing
@@ -105,11 +126,8 @@ function createOrderPayload(id: number, includePhone: boolean = true): any {
   return payload;
 }
 
-// Generate HMAC signature if secret is provided
-function generateSignature(payload: string): string | undefined {
-  if (!shopifySecret) {
-    return undefined;
-  }
+// Generate HMAC signature (secret is always available as it's required)
+function generateSignature(payload: string): string {
   const hmac = createHmac("sha256", shopifySecret);
   hmac.update(payload, "utf8");
   return hmac.digest("base64");
@@ -121,20 +139,22 @@ async function sendWebhook(
   topic: string,
   payload: any
 ): Promise<{ success: boolean; status: number; error?: string }> {
+  // Use JSON.stringify with no spaces to ensure consistent formatting
+  // This matches what Shopify sends (compact JSON)
   const payloadString = JSON.stringify(payload);
   const signature = generateSignature(payloadString);
-
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    "User-Agent": "Shopify-Captain-Hook", // Match Shopify user agent
     "X-Shopify-Event-Id": eventId,
     "X-Shopify-Topic": topic,
     "X-Shopify-Shop-Domain": "demo.myshopify.com",
     "X-Shopify-Triggered-At": new Date().toISOString(),
+    "X-Shopify-Api-Version": "2026-01",
+    "X-Shopify-Test": "true", // Match Shopify CLI test webhooks
+    "X-Shopify-Webhook-Id": randomUUID(),
+    "X-Shopify-Hmac-SHA256": signature, // Always include signature
   };
-
-  if (signature) {
-    headers["X-Shopify-Hmac-SHA256"] = signature;
-  }
 
   try {
     // sourceUrl is guaranteed to be defined due to validation above

@@ -23,20 +23,18 @@ async function sendConfirmationText(phoneNumber: string): Promise<void> {
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { payload, shop } = await authenticate.webhook(request);
-
   const timestamp = new Date().toISOString();
-  const eventId = request.headers.get("x-shopify-event-id") || "unknown";
-
-  // Read topic directly from header - Shopify sends it as "orders/create" (lowercase with slash)
-  // authenticate.webhook() returns it as "ORDERS_CREATE" (uppercase with underscore)
-  const topic = request.headers.get("x-shopify-topic") || "unknown";
-
-  console.log(
-    `[${timestamp}] <- Received: ${topic} | Event ID: ${eventId} | Shop: ${shop}`,
-  );
 
   try {
+    const { payload, shop } = await authenticate.webhook(request);
+
+    const eventId = request.headers.get("x-shopify-event-id") || "unknown";
+    const topic = request.headers.get("x-shopify-topic") || "unknown";
+
+    console.log(
+      `[${timestamp}] Received: ${topic} | Event ID: ${eventId} | Shop: ${shop}`,
+    );
+
     // Process order webhooks
     if (topic === "orders/create") {
       // For new orders, send a confirmation text message
@@ -46,13 +44,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       // sendConfirmationText will throw if phoneNumber is undefined/null
       await sendConfirmationText(customerPhone || "");
 
-      console.log(`[${timestamp}] ✓ Order created, confirmation text sent`);
+      console.log(`[${timestamp}] Order created, confirmation text sent`);
     } else {
-      // Handle other order events (updated, cancelled, etc.)
-      console.log(`[${timestamp}] ✓ Processing ${topic} event`);
+      console.log(`[${timestamp}] Processing ${topic} event`);
     }
-
-    console.log(`[${timestamp}] ✓ Returning 200`);
 
     return new Response(
       JSON.stringify({
@@ -67,13 +62,44 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       },
     );
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-    console.log(`[${timestamp}] ✗ Returning 500: ${errorMessage}`);
+    const topic = request.headers.get("x-shopify-topic") || "unknown";
+    const eventId = request.headers.get("x-shopify-event-id") || "unknown";
 
+    // If it's a Response object (Shopify's authenticate.webhook throws this for auth failures)
+    if (error instanceof Response) {
+      console.error(
+        `[${timestamp}] Webhook authentication failed: ${topic} | Event ID: ${eventId} | Status: ${error.status}`,
+      );
+      return error; // Return the Response as-is
+    }
+
+    // If it's an Error object (application error)
+    if (error instanceof Error) {
+      console.error(
+        `[${timestamp}] Error processing webhook: ${topic} | Event ID: ${eventId} | ${error.message}`,
+      );
+
+      // Return 500 for application errors (like missing phone number)
+      return new Response(
+        JSON.stringify({
+          error: error.message,
+          event_id: eventId,
+          topic: topic,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // Fallback for unknown error types
+    console.error(`[${timestamp}] Unknown error processing webhook: ${topic} | Event ID: ${eventId}`);
     return new Response(
       JSON.stringify({
-        error: errorMessage,
+        error: "Unknown error",
+        event_id: eventId,
+        topic: topic,
       }),
       {
         status: 500,
