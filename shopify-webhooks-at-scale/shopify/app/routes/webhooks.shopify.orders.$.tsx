@@ -9,7 +9,13 @@ import { authenticate } from "../shopify.server";
  * with an SMS service like Twilio, MessageBird, etc.
  */
 async function sendConfirmationText(phoneNumber: string): Promise<void> {
+  console.log(
+    `[DEBUG] sendConfirmationText called with: ${JSON.stringify(phoneNumber)}`,
+  );
+  console.log(`[DEBUG] !phoneNumber = ${!phoneNumber}`);
+
   if (!phoneNumber) {
+    console.log(`[DEBUG] Throwing error: Phone number is required`);
     throw new Error("Phone number is required to send confirmation text");
   }
 
@@ -41,8 +47,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       // This will throw an error if customer.phone is missing
       const customerPhone = (payload as { customer?: { phone?: string } })
         ?.customer?.phone;
+
+      console.log(
+        `[${timestamp}] DEBUG: customerPhone = ${JSON.stringify(customerPhone)}`,
+      );
+      console.log(
+        `[${timestamp}] DEBUG: customerPhone || "" = ${JSON.stringify(customerPhone || "")}`,
+      );
+
       // sendConfirmationText will throw if phoneNumber is undefined/null
+      // if (customerPhone) {
       await sendConfirmationText(customerPhone || "");
+      // } else {
+      // console.log(`[${timestamp}] Order created, no phone number found`);
+      // }
 
       console.log(`[${timestamp}] Order created, confirmation text sent`);
     } else {
@@ -94,7 +112,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     // Fallback for unknown error types
-    console.error(`[${timestamp}] Unknown error processing webhook: ${topic} | Event ID: ${eventId}`);
+    console.error(
+      `[${timestamp}] Unknown error processing webhook: ${topic} | Event ID: ${eventId}`,
+    );
     return new Response(
       JSON.stringify({
         error: "Unknown error",

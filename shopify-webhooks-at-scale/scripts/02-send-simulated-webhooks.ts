@@ -20,7 +20,7 @@ dotenv.config({ path: envPath });
 const args = process.argv.slice(2);
 let burstSize = parseInt(process.env.BURST_SIZE || "300");
 let duplicateEvery = parseInt(process.env.DUPLICATE_EVERY || "0");
-let topic = process.env.TOPIC || "orders/updated";
+let topic = process.env.TOPIC || "orders/create";
 let includeCustomerPhone = process.env.INCLUDE_CUSTOMER_PHONE !== "false"; // Default to true
 
 // Parse CLI flags
@@ -45,7 +45,7 @@ Usage: ts-node 02-send-simulated-webhooks.ts [options]
 Options:
   --burst <number>              Number of webhooks to send (default: 300, or BURST_SIZE env var)
   --duplicate-every <number>    Reuse same event ID every N requests (default: 0 = unique IDs, or DUPLICATE_EVERY env var)
-  --topic <string>              Webhook topic (default: orders/updated, or TOPIC env var)
+  --topic <string>              Webhook topic (default: orders/create, or TOPIC env var)
                                 Supported topics: orders/create, orders/updated, orders/paid, orders/cancelled, etc.
   --no-customer-phone           Exclude customer.phone from payload (for failure scenarios)
   --with-customer-phone          Include customer.phone in payload (default)
@@ -68,7 +68,7 @@ const baseSourceUrl = process.env.HOOKDECK_SOURCE_URL;
 if (!baseSourceUrl) {
   console.error("Error: HOOKDECK_SOURCE_URL environment variable is not set");
   console.error(
-    "Please set it in your .env file or as an environment variable"
+    "Please set it in your .env file or as an environment variable",
   );
   process.exit(1);
 }
@@ -88,10 +88,10 @@ const shopifySecretEnv = process.env.SHOPIFY_CLIENT_SECRET;
 if (!shopifySecretEnv) {
   console.error("Error: SHOPIFY_CLIENT_SECRET environment variable is not set");
   console.error(
-    "Please set it in your .env file. This should match the client secret that 'shopify app dev' uses."
+    "Please set it in your .env file. This should match the client secret that 'shopify app dev' uses.",
   );
   console.error(
-    "You can find it by running: shopify app env show --path ./shopify"
+    "You can find it by running: shopify app env show --path ./shopify",
   );
   process.exit(1);
 }
@@ -100,18 +100,38 @@ if (!shopifySecretEnv) {
 const shopifySecret: string = shopifySecretEnv;
 
 console.log(`✓ Using SHOPIFY_CLIENT_SECRET (length: ${shopifySecret.length})`);
-console.log(`  (This should match the secret that 'shopify app dev' injects for signature verification)`);
+console.log(
+  `  (This should match the secret that 'shopify app dev' injects for signature verification)`,
+);
+
+// Array of 10 different email recipients
+const emailRecipients = [
+  "john@example.com",
+  "jane@example.com",
+  "bob@example.com",
+  "alice@example.com",
+  "charlie@example.com",
+  "diana@example.com",
+  "eve@example.com",
+  "frank@example.com",
+  "grace@example.com",
+  "henry@example.com",
+];
 
 // Order payload matching include_fields structure
 // Can include/exclude customer.phone for failure scenario testing
 function createOrderPayload(id: number, includePhone: boolean = true): any {
+  // Randomly select one of the 10 email recipients
+  const randomEmail =
+    emailRecipients[Math.floor(Math.random() * emailRecipients.length)];
+
   const payload: any = {
     id: id,
     updated_at: new Date().toISOString(),
     admin_graphql_api_id: `gid://shopify/Order/${id}`,
     customer: {
       id: 115310627314723954,
-      email: "john@example.com",
+      email: randomEmail,
     },
     billing_address: {
       phone: includePhone ? "123-123-1234" : null,
@@ -137,7 +157,7 @@ function generateSignature(payload: string): string {
 async function sendWebhook(
   eventId: string,
   topic: string,
-  payload: any
+  payload: any,
 ): Promise<{ success: boolean; status: number; error?: string }> {
   // Use JSON.stringify with no spaces to ensure consistent formatting
   // This matches what Shopify sends (compact JSON)
@@ -192,10 +212,10 @@ async function main() {
       duplicateEvery > 0
         ? `Every ${duplicateEvery} requests`
         : "Unique event IDs"
-    }`
+    }`,
   );
   console.log(
-    `Customer phone: ${includeCustomerPhone ? "included" : "excluded"}`
+    `Customer phone: ${includeCustomerPhone ? "included" : "excluded"}`,
   );
   console.log("==========================================");
   console.log("");
@@ -243,7 +263,7 @@ async function main() {
       console.log(
         `Progress: ${
           i + 1
-        }/${burstSize} (${successCount} success, ${failureCount} failures) - ${elapsed}s`
+        }/${burstSize} (${successCount} success, ${failureCount} failures) - ${elapsed}s`,
       );
     }
   }

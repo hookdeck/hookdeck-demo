@@ -63,7 +63,6 @@ This demo harness supports three key demonstrations:
    ```
 
    The `shopify app dev` command will:
-
    - Create a new app in your Partners account (or use existing if not using --reset)
    - Generate `shopify.app.toml` with your `client_id`
    - Set up authentication and environment variables
@@ -125,7 +124,6 @@ This demo harness supports three key demonstrations:
    ```
 
 2. Verify both connections appear in the Hookdeck dashboard:
-
    - **Production connection**: `shopify-orders-prod-conn`
      - Source: `shopify-orders`
      - Destination: `shopify-orders-prod` (HTTP, connection: `shopify-orders-prod-conn`)
@@ -179,7 +177,6 @@ This demo harness supports three key demonstrations:
    ```
 
 4. Show backpressure in the Hookdeck dashboard:
-
    - Navigate to the `shopify-orders-prod-conn` connection
    - Observe queued events
    - Note the throughput limit (5 requests/second)
@@ -219,7 +216,6 @@ This demo harness supports three key demonstrations:
 **Steps**:
 
 1. **Deploy production Shopify app** (if not already deployed):
-
    - Deploy the Shopify app to your hosting platform (e.g., Vercel, Railway)
    - The webhook handler in `shopify/app/routes/webhooks.shopify.orders.$.tsx` assumes `customer.phone` exists (will fail if missing)
    - Update `DESTINATION_URL` in `.env` to point to your deployed Shopify app URL (e.g., `https://your-app.vercel.app`)
@@ -236,7 +232,6 @@ This demo harness supports three key demonstrations:
    ```
 
 3. **Show failures in Hookdeck dashboard**:
-
    - Navigate to the `shopify-orders-prod-conn` connection's events/logs
    - Filter for failed events (status: 500)
    - Observe the failed deliveries with error message "Missing customer.phone field"
@@ -257,13 +252,11 @@ This demo harness supports three key demonstrations:
    ```
 
 5. **Replicate the problem locally**:
-
    - Send a test event without customer.phone to the CLI connection
    - Observe the failure in local server logs
    - Confirm the issue: missing `customer.phone` field
 
 6. **Fix the issue locally**:
-
    - Edit `shopify/app/routes/webhooks.shopify.orders.$.tsx` to check for phone number before calling `sendConfirmationText()`
    - Add a conditional check: only send confirmation text if `customer.phone` exists
    - Test with events that include customer.phone (should work)
@@ -271,12 +264,10 @@ This demo harness supports three key demonstrations:
    - Verify the fix works
 
 7. **Push fix to production**:
-
    - Commit the code changes
    - Deploy the updated Shopify app to production
 
 8. **Retry failed events on production connection**:
-
    - In Hookdeck dashboard, select a single failed event
    - Click "Retry" to test with one event
    - Observe retry attempt succeeding
@@ -361,15 +352,15 @@ Sends simulated Shopify webhook requests to a Hookdeck source URL.
 # Using npm script
 npm run send:simulated -- --burst 300 --topic orders/create --no-customer-phone
 
-# Direct execution
-ts-node scripts/02-send-simulated-webhooks.ts --burst 300 --topic orders/updated
+# Direct execution (defaults to orders/create)
+ts-node scripts/02-send-simulated-webhooks.ts --burst 300
 ```
 
 **Options**:
 
 - `--burst <number>`: Number of webhooks to send (default: 300)
 - `--duplicate-every <number>`: Reuse same event ID every N requests (default: 0 = unique IDs)
-- `--topic <string>`: Webhook topic (default: `orders/updated`)
+- `--topic <string>`: Webhook topic (default: `orders/create`)
   - Supported: `orders/create`, `orders/updated`, `orders/paid`, `orders/cancelled`, etc.
 - `--no-customer-phone`: Exclude customer.phone from payload (for failure scenarios)
 - `--with-customer-phone`: Include customer.phone in payload (default)
